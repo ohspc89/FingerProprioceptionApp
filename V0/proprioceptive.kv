@@ -16,21 +16,28 @@
 	# lr range: (1/3, 4/3)
 	# Currently there's no way to block this lr value to stop at its limits by the button press
 	# Needs a solution to prevent the shape becoming weird
-	lr: 2/3 
+	tl: 0
+	degree: 0
 	canvas.after:
 		Color:
 			rgba: self.bg_color_after 
 		Quad:
-			points: self.width/3, self.height/2, self.width/3.0, self.height*1.5, self.width*root.lr, self.height*1.5, self.width, self.height/2
+			points: self.width/3, self.height/2, self.width/3.0, self.height*1.5, self.width-root.tl, self.height*1.5, self.width, self.height/2
 
 <FloatLayout>:
 	CustomButton:
-		text: "More left"
+		id: _more_left
+		text: ""
+		background_normal : ''
+		background_color : 1, 0, 0, 1
 		pos_hint:{"x":0.1, "y":0.1}
 		on_press: root.damnwrong() 
 	
 	CustomButton:
-		text: "More right"
+		id: _more_right
+		text: ""
+		background_normal : ''
+		background_color : 0, 1, 0, 1
 		pos_hint:{"x":0.21, "y":0.1}
 		on_press: root.damnright()
 
