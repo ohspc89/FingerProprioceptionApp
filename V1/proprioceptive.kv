@@ -1,0 +1,231 @@
+#:import math math
+
+# Intersecting gridlines for calibration
+<GridLines@Widget>:
+    # vertical line
+    canvas.before:
+        Color:
+            rgba: 1, 1, 1, 1
+        Rectangle:
+            pos: self.x, self.y
+            size: self.right, self.top
+        Color:
+            rgba: 0, 0, 0, 1
+        Line:
+            points: self.center_x, self.y, self.center_x, self.top
+    # horizontal line
+    canvas.after:
+        Color:
+            rgba: 0, 0, 0, 1
+        Line:
+            points: self.x, self.center_y, self.right, self.center_y
+
+# Button size is proportional to the screen size
+<CustomButton@Button>
+    size_hint: 0.3, 0.05
+    spacing: 10
+
+<ColorScreen@Widget>
+    # Initial screen color on the right: Blue 
+    bg_color_before: 0, 0, 1, 1
+    canvas.before:
+        Color:
+            rgba: self.bg_color_before
+        Rectangle:
+            pos: self.x, self.y 
+            size: self.width, self.height
+    # Initial screen color on the left: Red
+    bg_color_after: 1, 0, 0, 1
+
+    # initial info??
+    # This degree should be determined after the position of MP joint is set.
+    # left: < 0; right: > 0
+    # <degree> will be overridden by the <TestScreen> input
+    degree: -45 
+    # <num> will be overridden by the <TestScreen> input
+    num: 1
+    canvas.after:
+        Color:
+            rgba: self.bg_color_after
+        Quad:
+            # there may need further discussion regarding these points
+            # current setting of the MP joint = 0.7 * total width of the colored screen
+            points: [self.x, self.y, self.x, self.top, self.right*0.7 + self.height*math.tan(math.radians(self.degree)), self.top, self.right*0.7, self.y] if self.num == 1 else [self.x, self.y, self.x, self.top, self.right*0.3 + self.height*math.tan(math.radians(self.degree)), self.top, self.right*0.3, self.y]
+
+<CalibrationScreen>:
+    FloatLayout:
+        GridLines:
+            on_touch_down:
+                root.manager.current = "screen_two"
+
+<CustomPopup>:
+    size_hint: .5, .5
+    auto_dismiss: false
+    title: "Popup Window"
+    Button:
+        text: "Close"
+        on_press: root.dismiss()
+
+<ParamInputScreen>:
+    pid_text_input: pid
+    flen_text_input: flen
+    fwid_text_input: fwid
+    initd_text_input: initd
+    BoxLayout:
+        orientation: "vertical"
+
+        canvas:
+            Color:
+                rgba: 1, 1, 1, 0.95
+            Rectangle:
+                size: self.right, self.top
+        
+        RelativeLayout:
+
+            Label:
+                color: 0, 0, 0, 1
+                text: "Participant number"
+                pos_hint:{'center_x':0.2, 'center_y':0.5}
+
+            TextInput:
+                id: pid
+                font_size: 20
+                multiline: False 
+                size_hint: (0.1, 0.25)
+                pos_hint:{'center_x': 0.7, 'center_y':0.5}
+                focus: True
+
+        RelativeLayout:
+
+            Label:
+                color: 0, 0, 0, 1
+                text: "Initial change(deg)"
+                pos_hint:{'center_x':0.2, 'center_y':0.5}
+
+            TextInput:
+                id: initd
+                font_size: 20
+                multiline: False 
+                size_hint: (0.1, 0.25)
+                pos_hint:{'center_x': 0.7, 'center_y':0.5}
+                focus: True
+
+        RelativeLayout:
+
+            Label:
+                color: 0, 0, 0, 1 
+                text: "Dominant hand"
+                pos_hint: {'center_x':0.2}
+
+            CheckBox:
+                id: leftchk
+                color: 0, 0, 0, 1
+                group: "dominant_hand"
+                value: root.left
+                pos_hint: {'center_x':.6}
+                size_hint_x: 0.1
+                on_active: root.if_active_l(self.active)
+
+            Label:
+                color: 0, 0, 0, 1
+                text: "Left"
+                pos_hint: {'center_x':.65}
+
+            CheckBox:
+                id: rightchk
+                color: 0, 0, 0, 1
+                group: "dominant_hand"
+                value: root.right
+                pos_hint: {'center_x':.75}
+                size_hint_x: 0.1
+                on_active: root.if_active_r(self.active)
+
+            Label:
+                color: 0, 0, 0, 1
+                text: "Right"
+                pos_hint: {'center_x':.8}
+
+        RelativeLayout:
+
+            Label:
+                color: 0, 0, 0, 1
+                text: "Finger width(mm)"
+                pos_hint:{'center_x':0.2, 'center_y':0.5}
+
+            TextInput:
+                id: fwid
+                font_size: 20
+                multiline: False 
+                size_hint: (0.1, 0.25)
+                pos_hint:{'center_x': 0.7, 'center_y':0.5}
+                focus: True
+
+        RelativeLayout:
+
+            Label:
+                color: 0, 0, 0, 1
+                text: "Finger length(mm)"
+                pos_hint:{'center_x':0.2, 'center_y':0.5}
+
+            TextInput:
+                id: flen
+                font_size: 20
+                multiline: False 
+                size_hint: (0.1, 0.25)
+                pos_hint:{'center_x': 0.7, 'center_y':0.5}
+                focus: True
+
+        Button:
+            text: "Next"
+            color: 1, 1, 1, 1
+            font_size: 20
+            size_hint: (.2, .2)
+            pos_hint: {'center_x':0.5, 'y':self.top}
+            on_press: 
+                root.manager.current = "screen_three"
+                root.assign_variables()
+
+        Label:
+            text: ""
+            size_hint: (.1, .1)
+
+# The actual color screen
+<TestScreen>:
+
+    handedness: cw
+
+    RelativeLayout:
+        CustomButton:
+            id: _more_left 
+            background_color: 1, 0, 0, 1
+            background_normal: ""
+            pos_hint: {'x':0.05, 'y':0.05}
+            on_press: root.on_the_left()
+
+        CustomButton:
+            id: _more_right
+            background_color: 0, 0, 1, 1
+            background_normal: ""
+            pos_hint: {'x':0.38, 'y':0.05}
+            on_press: root.on_the_right()
+
+        ColorScreen:
+            id: cw
+            # have the colorscreen be centered!!
+            pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+            size_hint: 0.9, 0.7
+            degree: -35
+            # <num> will be overridden by the choice of left or right
+            num: 0
+            # have this property to have an access to it all the time
+            quad_points: [self.x, self.y, self.x, self.top, self.right*0.7 + self.height*math.tan(math.radians(self.degree)), self.top, self.right*0.7, self.y] if self.num == 1 else [self.x, self.y, self.x, self.top, self.right*0.3 + self.height*math.tan(math.radians(self.degree)), self.top, self.right*0.3, self.y]
+
+<screen_manager>:
+    CalibrationScreen:
+        id: calibsc
+    ParamInputScreen:
+        id: paramsc
+        name: "screen_two"
+    TestScreen:
+        id: testsc
+        name: "screen_three"
