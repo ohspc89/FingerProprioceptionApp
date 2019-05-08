@@ -15,3 +15,12 @@ This is a project to build an app that would test Hand Proprioception
 4. RelativeLayout is used to incorporate different items
 5. ScreenManager is used to move from one screen to the other
 6. Gridlines are prepared for the initial calibration
+
+## V1 (update: 19.05.08)
+1. A screen that gets user input has been created
+  - Participant ID
+  - Initial degree change
+  - Hand Dominance
+  - Finger width
+  - Finger length
+2. Based on the user input, the color screen will be generated and operated
