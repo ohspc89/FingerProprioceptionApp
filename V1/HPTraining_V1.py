@@ -9,28 +9,50 @@ from kivy.properties import ObjectProperty
 class CalibrationScreen(Screen):
     pass
 
-class ParamInputScreen(Screen):
+class ParamInputScreenOne(Screen):
 
+    male = ObjectProperty(True)
+    female = ObjectProperty(False)
     right = ObjectProperty(True)
     left = ObjectProperty(False)
 
     def assign_variables(self):
         self.pid = self.pid_text_input.text
-        self.flen = self.flen_text_input.text
-        self.fwid = self.fwid_text_input.text
-        self.initd = self.initd_text_input.text
+        self.age = self.age_text_input.text
         # subject information
-        print("pid:", self.pid, "finger length:", self.flen, "finger width:", self.fwid, "initial degree:", self.initd, "right:", self.ids.rightchk.active)
+        print("pid:", self.pid, "age:", self.age, "gender:", self.gender, "Right_Dominant:", self.ids.rightchk.active)
+
+    def if_active_m(self, state):
+        if state:
+            # Whill change the orientation of the testscreen's colorscreen
+            self.gender = "M"
+
+    def if_active_f(self, state):
+        if state:
+            self.gender = "F"
 
     def if_active_r(self, state):
         if state:
             # Whill change the orientation of the testscreen's colorscreen
             self.parent.ids.testsc.handedness.num = 1
+            self.parent.ids.testsc.handedness.degree = -35
 
     def if_active_l(self, state):
         if state:
             self.parent.ids.testsc.handedness.num = 0
             self.parent.ids.testsc.handedness.degree = 35
+
+class ParamInputScreenTwo(Screen):
+
+    def assign_variables(self):
+        self.flen = self.flen_text_input.text
+        self.fwid = self.fwid_text_input.text
+        self.initd = self.initd_text_input.text
+        self.mprad = self.mprad_text_input.text
+
+        # subject anthropometric information
+        print("finger length:", self.flen, "finger width:", self.fwid, "initial ss:", self.initd, "MP Joint Radius:", self.mprad)
+
 
 class TestScreen(Screen):
 
@@ -77,7 +99,7 @@ class TestScreen(Screen):
 
         # Add the current choice, check if reversal is happening
         self.track_rev('otl')
-        
+
         # Based on the updated reversal count, calculate the delta_d
         self.update_delta_d()
 
@@ -113,12 +135,12 @@ class TestScreen(Screen):
         if (self.ids.cw.quad_points[6] + self.ids.cw.height*math.tan(math.radians(temp_r)) > self.ids.cw.right):
             self.ids.cw.degree = math.degrees(math.atan((self.ids.cw.right - self.ids.cw.quad_points[6]) / self.ids.cw.height))
         else:
-            self.ids.cw.degree = temp_r 
+            self.ids.cw.degree = temp_r
 
         self.trial_num += 1
 
         print(self.trial_num, self.ids.cw.degree)
-            
+
 
 #screen_manager = ScreenManager(transition=FadeTransition())
 #screen_manager.add_widget(CalibrationScreen(name="screen_one"))

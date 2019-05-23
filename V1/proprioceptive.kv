@@ -56,7 +56,7 @@
     FloatLayout:
         GridLines:
             on_touch_down:
-                root.manager.current = "screen_two"
+                root.manager.current = "param_screen_one"
 
 <CustomPopup>:
     size_hint: .5, .5
@@ -66,13 +66,163 @@
         text: "Close"
         on_press: root.dismiss()
 
-<ParamInputScreen>:
-    pid_text_input: pid
+<ParamInputScreenOne>:
+    pid_text_input: pid 
+    age_text_input: age
+    BoxLayout:
+        orientation: "horizontal"
+
+        canvas:
+            Color:
+                rgba: 1, 1, 1, 0.95
+            Rectangle: 
+                size: self.right, self.top
+
+        Image:
+            source: "HSCL.jpg"
+            size: 400, 400 
+            pos: 20, 20 
+
+        BoxLayout:
+            orientation: "vertical"
+
+            RelativeLayout:
+
+                Label:
+                    color: 0, 0, 0, 1
+                    text: "Participant ID"
+                    pos_hint:{'center_x':0.2, 'center_y':0.5}
+
+                TextInput:
+                    id: pid
+                    font_size: 20
+                    multiline: False 
+                    size_hint: (0.2, 0.2)
+                    pos_hint:{'center_x': 0.55, 'center_y':0.5}
+                    focus: True
+
+            RelativeLayout:
+
+                Label:
+                    color: 0, 0, 0, 1
+                    text: "Age"
+                    pos_hint:{'center_x':0.2, 'center_y':0.5}
+
+                TextInput:
+                    id: age
+                    font_size: 20
+                    multiline: False 
+                    size_hint: (0.2, 0.2)
+                    pos_hint:{'center_x': 0.55, 'center_y':0.5}
+                    focus: True
+
+            RelativeLayout:
+
+                Label:
+                    color: 0, 0, 0, 1 
+                    text: "Gender"
+                    pos_hint: {'center_x':0.2}
+
+                CheckBox:
+                    id: malechk
+                    color: 0, 0, 0, 1
+                    group: "Gender"
+                    value: root.male
+                    pos_hint: {'center_x':.4}
+                    size_hint_x: 0.1
+                    on_active: root.if_active_m(self.active)
+
+                Label:
+                    color: 0, 0, 0, 1
+                    text: "Male"
+                    pos_hint: {'center_x':.5}
+
+                CheckBox:
+                    id: femalechk
+                    color: 0, 0, 0, 1
+                    group: "Gender"
+                    value: root.female
+                    pos_hint: {'center_x':.6}
+                    size_hint_x: 0.1
+                    on_active: root.if_active_f(self.active)
+
+                Label:
+                    color: 0, 0, 0, 1
+                    text: "Female"
+                    pos_hint: {'center_x':.7}
+
+            RelativeLayout:
+
+                Label:
+                    color: 0, 0, 0, 1 
+                    text: "Dominant hand"
+                    pos_hint: {'center_x':0.2}
+
+                CheckBox:
+                    id: leftchk
+                    color: 0, 0, 0, 1
+                    group: "dominant_hand"
+                    value: root.left
+                    pos_hint: {'center_x':.4}
+                    size_hint_x: 0.1
+                    on_active: root.if_active_l(self.active)
+
+                Label:
+                    color: 0, 0, 0, 1
+                    text: "Left"
+                    pos_hint: {'center_x':.5}
+
+                CheckBox:
+                    id: rightchk
+                    color: 0, 0, 0, 1
+                    group: "dominant_hand"
+                    value: root.right
+                    pos_hint: {'center_x':.6}
+                    size_hint_x: 0.1
+                    on_active: root.if_active_r(self.active)
+
+                Label:
+                    color: 0, 0, 0, 1
+                    text: "Right"
+                    pos_hint: {'center_x':.7}
+
+            RelativeLayout:
+
+                Button:
+                    text: "Back"
+                    color: 1, 1, 1, 1
+                    font_size: 20
+                    size_hint: (.2, .25)
+                    pos_hint: {'center_x':0.2, 'center_y':0.4}
+                    on_press: 
+                        root.manager.current = "calib_screen"
+
+                Button:
+                    text: "Save"
+                    color: 1, 1, 1, 1
+                    font_size: 20
+                    size_hint: (.2, .25)
+                    pos_hint: {'center_x':0.5, 'center_y':0.4}
+                    on_press: 
+                        root.assign_variables()
+
+                Button:
+                    text: "Next"
+                    color: 1, 1, 1, 1
+                    font_size: 20
+                    size_hint: (.2, .25)
+                    pos_hint: {'center_x':0.8, 'center_y':0.4}
+                    on_press: 
+                        root.manager.current = "param_screen_two"
+
+
+<ParamInputScreenTwo>:
     flen_text_input: flen
     fwid_text_input: fwid
     initd_text_input: initd
+    mprad_text_input: mprad
     BoxLayout:
-        orientation: "vertical"
+        orientation: "horizontal"
 
         canvas:
             Color:
@@ -80,114 +230,103 @@
             Rectangle:
                 size: self.right, self.top
         
-        RelativeLayout:
+        Image:
+            source: "hand_image.png"
+            size: 400, 600
+            pos: 20, 20
 
-            Label:
-                color: 0, 0, 0, 1
-                text: "Participant number"
-                pos_hint:{'center_x':0.2, 'center_y':0.5}
+        BoxLayout:
+            orientation: "vertical"
 
-            TextInput:
-                id: pid
-                font_size: 20
-                multiline: False 
-                size_hint: (0.1, 0.25)
-                pos_hint:{'center_x': 0.7, 'center_y':0.5}
-                focus: True
+            RelativeLayout:
 
-        RelativeLayout:
+                Label:
+                    color: 0, 0, 0, 1
+                    text: "Initial Step Size(deg)"
+                    pos_hint:{'center_x':0.3, 'center_y':0.5}
 
-            Label:
-                color: 0, 0, 0, 1
-                text: "Initial change(deg)"
-                pos_hint:{'center_x':0.2, 'center_y':0.5}
+                TextInput:
+                    id: initd
+                    font_size: 20
+                    multiline: False 
+                    size_hint: (0.2, 0.2)
+                    pos_hint:{'center_x': 0.7, 'center_y':0.5}
+                    focus: True
 
-            TextInput:
-                id: initd
-                font_size: 20
-                multiline: False 
-                size_hint: (0.1, 0.25)
-                pos_hint:{'center_x': 0.7, 'center_y':0.5}
-                focus: True
 
-        RelativeLayout:
+            RelativeLayout:
 
-            Label:
-                color: 0, 0, 0, 1 
-                text: "Dominant hand"
-                pos_hint: {'center_x':0.2}
+                Label:
+                    color: 0, 0, 0, 1
+                    text: "Finger width(mm)"
+                    pos_hint:{'center_x':0.3, 'center_y':0.5}
 
-            CheckBox:
-                id: leftchk
-                color: 0, 0, 0, 1
-                group: "dominant_hand"
-                value: root.left
-                pos_hint: {'center_x':.6}
-                size_hint_x: 0.1
-                on_active: root.if_active_l(self.active)
+                TextInput:
+                    id: fwid
+                    font_size: 20
+                    multiline: False 
+                    size_hint: (0.2, 0.2)
+                    pos_hint:{'center_x': 0.7, 'center_y':0.5}
+                    focus: True
 
-            Label:
-                color: 0, 0, 0, 1
-                text: "Left"
-                pos_hint: {'center_x':.65}
+            RelativeLayout:
 
-            CheckBox:
-                id: rightchk
-                color: 0, 0, 0, 1
-                group: "dominant_hand"
-                value: root.right
-                pos_hint: {'center_x':.75}
-                size_hint_x: 0.1
-                on_active: root.if_active_r(self.active)
+                Label:
+                    color: 0, 0, 0, 1
+                    text: "[1] Finger length(mm)"
+                    pos_hint:{'center_x':0.3, 'center_y':0.5}
 
-            Label:
-                color: 0, 0, 0, 1
-                text: "Right"
-                pos_hint: {'center_x':.8}
+                TextInput:
+                    id: flen
+                    font_size: 20
+                    multiline: False 
+                    size_hint: (0.2, 0.2)
+                    pos_hint:{'center_x': 0.7, 'center_y':0.5}
+                    focus: True
 
-        RelativeLayout:
+            RelativeLayout:
 
-            Label:
-                color: 0, 0, 0, 1
-                text: "Finger width(mm)"
-                pos_hint:{'center_x':0.2, 'center_y':0.5}
+                Label:
+                    color: 0, 0, 0, 1
+                    text: "[2] MP Joint Radius(mm)"
+                    pos_hint:{'center_x':0.3, 'center_y':0.5}
 
-            TextInput:
-                id: fwid
-                font_size: 20
-                multiline: False 
-                size_hint: (0.1, 0.25)
-                pos_hint:{'center_x': 0.7, 'center_y':0.5}
-                focus: True
+                TextInput:
+                    id: mprad 
+                    font_size: 20
+                    multiline: False 
+                    size_hint: (0.2, 0.2)
+                    pos_hint:{'center_x': 0.7, 'center_y':0.5}
+                    focus: True
 
-        RelativeLayout:
+            RelativeLayout:
 
-            Label:
-                color: 0, 0, 0, 1
-                text: "Finger length(mm)"
-                pos_hint:{'center_x':0.2, 'center_y':0.5}
+                Button:
+                    text: "Back"
+                    color: 1, 1, 1, 1
+                    font_size: 20
+                    size_hint: (.2, .25)
+                    pos_hint: {'center_x':0.2, 'center_y':0.4}
+                    on_press: 
+                        root.manager.current = "param_screen_one"
 
-            TextInput:
-                id: flen
-                font_size: 20
-                multiline: False 
-                size_hint: (0.1, 0.25)
-                pos_hint:{'center_x': 0.7, 'center_y':0.5}
-                focus: True
+                Button:
+                    text: "Save"
+                    color: 1, 1, 1, 1
+                    font_size: 20
+                    size_hint: (.2, .25)
+                    pos_hint: {'center_x':0.5, 'center_y':0.4}
+                    on_press: 
+                        root.assign_variables()
 
-        Button:
-            text: "Next"
-            color: 1, 1, 1, 1
-            font_size: 20
-            size_hint: (.2, .2)
-            pos_hint: {'center_x':0.5, 'y':self.top}
-            on_press: 
-                root.manager.current = "screen_three"
-                root.assign_variables()
-
-        Label:
-            text: ""
-            size_hint: (.1, .1)
+                Button:
+                    text: "Next"
+                    color: 1, 1, 1, 1
+                    font_size: 20
+                    size_hint: (.2, .25)
+                    pos_hint: {'center_x':0.8, 'center_y':0.4}
+                    on_press: 
+                        root.manager.current = "test_screen"
 
 # The actual color screen
 <TestScreen>:
@@ -223,9 +362,13 @@
 <screen_manager>:
     CalibrationScreen:
         id: calibsc
-    ParamInputScreen:
+        name: "calib_screen"
+    ParamInputScreenOne:
+        id: paramscone
+        name: "param_screen_one"
+    ParamInputScreenTwo:
         id: paramsc
-        name: "screen_two"
+        name: "param_screen_two"
     TestScreen:
         id: testsc
-        name: "screen_three"
+        name: "test_screen"
