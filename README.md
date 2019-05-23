@@ -24,3 +24,27 @@ This is a project to build an app that would test Hand Proprioception
   - Finger width
   - Finger length
 2. Based on the user input, the color screen will be generated and operated
+
+## V1 (update: 19.05.23)
+1. Two parameter input screens
+  1) Screen 1
+    - Participant ID
+    - Age
+    - Gender
+    - Hand Dominance
+   2) Screen 2
+    - Initial step size (degree)
+    - Finger length
+    - Finger width
+    - MP joint radius
+* Needs to be done soon
+  1) The lower border of the test screen should be drawn with respect to the MP joint radius
+  2) The pop-up window to check if calibration is complete
+* Ideas
+  1) Check if a researcher has correctly pushed the next button -> make "Next" doesn't work unless contents saved??
+### * For V2 (ETA: First week of June)
+  1) Saving the experimental data
+  2) Drop-down menu for different options
+    - Mean & SD [Priority]
+    - Typical psychophysical function
+    - Psi-marginal
