@@ -2,11 +2,23 @@ import math
 from random import randrange
 from kivy.uix.screenmanager import Screen, ScreenManager, FadeTransition
 from kivy.app import App
-from kivy.uix.floatlayout import FloatLayout
-from kivy.lang import Builder
 from kivy.properties import ObjectProperty
+from kivy.uix.popup import Popup
+from kivy.uix.floatlayout import FloatLayout
 
 class CalibrationScreen(Screen):
+
+    # Popup window
+    def show_popup(self):
+
+        the_popup = CalibPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
+        the_popup.open()
+
+
+class CalibPopup(Popup):
+    pass
+
+class ParamPopup(Popup):
     pass
 
 class ParamInputScreenOne(Screen):
@@ -16,11 +28,22 @@ class ParamInputScreenOne(Screen):
     right = ObjectProperty(True)
     left = ObjectProperty(False)
 
+    # Popup window
+    def show_popup(self):
+
+        the_popup = ParamPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
+
+        # Check if any of the parameter inputs is missing!
+        if any([self.pid == "", self.age == "", self.gender == None, self.ids.rightchk.active == None]) is True:
+            the_popup.argh.text = "Something's missing!"
+        the_popup.open()
+
     def assign_variables(self):
         self.pid = self.pid_text_input.text
         self.age = self.age_text_input.text
         # subject information
-        print("pid:", self.pid, "age:", self.age, "gender:", self.gender, "Right_Dominant:", self.ids.rightchk.active)
+        #print("pid:", self.pid, "age:", self.age, "gender:", self.gender, "Right_Dominant:", self.ids.rightchk.active)
+
 
     def if_active_m(self, state):
         if state:
@@ -44,6 +67,16 @@ class ParamInputScreenOne(Screen):
 
 class ParamInputScreenTwo(Screen):
 
+    # Popup window
+    def show_popup2(self):
+
+        the_popup = ParamPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
+
+        # Check if any of the parameter inputs is missing!
+        if any([self.flen == "", self.fwid == "", self.initd == "", self.mprad == ""]):
+            the_popup.argh.text = "Something's missing!"
+        the_popup.open()
+
     def assign_variables(self):
         self.flen = self.flen_text_input.text
         self.fwid = self.fwid_text_input.text
@@ -62,6 +95,7 @@ class TestScreen(Screen):
         super(TestScreen, self).__init__(**kwargs)
         self.rgblist1 = [(1, 0, 0, 1), (1, 1, 0, 1), (0, 1, 0, 1)]
         self.rgblist2 = [(0, 0, 1, 1), (0.5, 0, 1, 1), (1, 0.56, 0.75, 1)]
+        self.rgbindex = 0
         # counting the number of reverses to terminate the study
         self.rev_count = 0
         # checking if the reverse is happening
@@ -73,12 +107,15 @@ class TestScreen(Screen):
     # changes the color of the buttons as well as the screen
     def change_col_setting(self):
         rgb_index = randrange(0, 3, 1)
+        while rgb_index == self.rgbindex:
+            rgb_index = randrange(0, 3, 1)
         self.ids.cw.bg_color_after = self.rgblist1[rgb_index]
         self.ids.cw.bg_color_before = self.rgblist2[rgb_index]
         self.ids._more_left.background_normal = ''
         self.ids._more_left.background_color = self.ids.cw.bg_color_after
         self.ids._more_right.background_normal = ''
         self.ids._more_right.background_color = self.ids.cw.bg_color_before
+        self.rgbindex = rgb_index
 
     # keep track of reversals
     def track_rev(self, response):
