@@ -37,18 +37,22 @@ This is a project to build an app that would test Hand Proprioception
     - Finger length
     - Finger width
     - MP joint radius
-* Needs to be done soon
+    
+### Needs to be done soon
+
   The lower border of the test screen should be drawn with respect to the MP joint radius
   
   ~~The pop-up window to check if calibration is complete~~
   
   ~~Color randomization -> not to overlap!!~~
-* Ideas
+  
+### Ideas
+
   ~~1) Check if a researcher has correctly pushed the next button -> make "Next" doesn't work unless contents saved??~~
   
   -> Have the "Save" button to check if everything is correctly given.
   
-### For V2 (ETA: First week of June)
+## For V2 (ETA: First week of June)
   1) Experimental data should be saved somewhere
   2) Drop-down menu for different options
     - Mean & SD [Priority]
