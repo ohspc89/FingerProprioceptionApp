@@ -27,16 +27,16 @@ This is a project to build an app that would test Hand Proprioception
 
 ## V1 (update: 19.05.23)
 1. Two parameter input screens
-  1) Screen 1
-    \- Participant ID
-    \- Age
-    \- Gender
-    \- Hand Dominance
-   2) Screen 2
-    - Initial step size (degree)
-    - Finger length
-    - Finger width
-    - MP joint radius
+  #### Screen 1
+  - Participant ID
+  - Age
+  - Gender
+  - Hand Dominance
+  #### Screen 2
+  - Initial step size (degree)
+  - Finger length
+  - Finger width
+  - MP joint radius
     
 ### Needs to be done soon
 
