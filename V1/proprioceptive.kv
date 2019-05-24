@@ -25,6 +25,7 @@
     size_hint: 0.3, 0.05
     spacing: 10
 
+
 <ColorScreen@Widget>
     # Initial screen color on the right: Blue 
     bg_color_before: 0, 0, 1, 1
@@ -56,15 +57,58 @@
     FloatLayout:
         GridLines:
             on_touch_down:
-                root.manager.current = "param_screen_one"
+				root.show_popup()
+                #root.manager.current = "param_screen_one"
 
-<CustomPopup>:
-    size_hint: .5, .5
-    auto_dismiss: false
-    title: "Popup Window"
+<CalibPopup>:
     Button:
-        text: "Close"
-        on_press: root.dismiss()
+		id: cpopup 
+		background_normal: ""
+		background_color: 1, 1, 1, 1
+		size_hint: 0.6, 0.5
+		pos_hint: {"x": 0.2, "y": 0.25}
+		text: "Touch HERE\n(If Calibration is COMPLETE)\n \nTouch OUTSIDE THIS WINDOW\n(Otherwise)"
+		color: 1, 0, 0, 1
+		font_size: 25
+		halign:"center"
+        on_press: 
+			app.root.current = "param_screen_one"
+			root.dismiss()
+
+<ParamPopup>:
+	argh: ppopup
+	Button:
+		id: ppopup
+		background_normal: ""
+		background_color: 1, 1, 1, 1
+		text: "INPUT SAVED!"
+		color: 0, 0, 1, 1
+		font_size: 25
+		haligh: "center"
+		size_hint: 0.6, 0.5
+		pos_hint: {"x":0.2, "y": 0.25}
+		on_press:
+			root.dismiss()
+		
+# 3 items repeatedly used in the two parameter input screens
+
+<PTextInput@TextInput>:
+	font_size: 20
+	multiline: False 
+	size_hint: (0.2, 0.2)
+	pos_hint:{'center_x': 0.55, 'center_y':0.5}
+	focus: True
+	
+<PLabel@Label>:
+	color: 0, 0, 0, 1
+	font_size: 20
+	pos_hint:{'center_x':0.2, 'center_y':0.5}
+
+<PButton@Button>:
+	color: 1, 1, 1, 1
+	font_size: 20
+	size_hint: (.2, .25)
+
 
 <ParamInputScreenOne>:
     pid_text_input: pid 
@@ -88,40 +132,24 @@
 
             RelativeLayout:
 
-                Label:
-                    color: 0, 0, 0, 1
+                PLabel:
                     text: "Participant ID"
-                    pos_hint:{'center_x':0.2, 'center_y':0.5}
 
-                TextInput:
+                PTextInput:
                     id: pid
-                    font_size: 20
-                    multiline: False 
-                    size_hint: (0.2, 0.2)
-                    pos_hint:{'center_x': 0.55, 'center_y':0.5}
-                    focus: True
 
             RelativeLayout:
 
-                Label:
-                    color: 0, 0, 0, 1
+                PLabel:
                     text: "Age"
-                    pos_hint:{'center_x':0.2, 'center_y':0.5}
 
-                TextInput:
+                PTextInput:
                     id: age
-                    font_size: 20
-                    multiline: False 
-                    size_hint: (0.2, 0.2)
-                    pos_hint:{'center_x': 0.55, 'center_y':0.5}
-                    focus: True
 
             RelativeLayout:
 
-                Label:
-                    color: 0, 0, 0, 1 
+                PLabel:
                     text: "Gender"
-                    pos_hint: {'center_x':0.2}
 
                 CheckBox:
                     id: malechk
@@ -132,8 +160,7 @@
                     size_hint_x: 0.1
                     on_active: root.if_active_m(self.active)
 
-                Label:
-                    color: 0, 0, 0, 1
+                PLabel:
                     text: "Male"
                     pos_hint: {'center_x':.5}
 
@@ -146,15 +173,13 @@
                     size_hint_x: 0.1
                     on_active: root.if_active_f(self.active)
 
-                Label:
-                    color: 0, 0, 0, 1
+                PLabel:
                     text: "Female"
                     pos_hint: {'center_x':.7}
 
             RelativeLayout:
 
-                Label:
-                    color: 0, 0, 0, 1 
+                PLabel:
                     text: "Dominant hand"
                     pos_hint: {'center_x':0.2}
 
@@ -167,8 +192,7 @@
                     size_hint_x: 0.1
                     on_active: root.if_active_l(self.active)
 
-                Label:
-                    color: 0, 0, 0, 1
+                PLabel:
                     text: "Left"
                     pos_hint: {'center_x':.5}
 
@@ -181,36 +205,27 @@
                     size_hint_x: 0.1
                     on_active: root.if_active_r(self.active)
 
-                Label:
-                    color: 0, 0, 0, 1
+                PLabel:
                     text: "Right"
                     pos_hint: {'center_x':.7}
 
             RelativeLayout:
 
-                Button:
+                PButton:
                     text: "Back"
-                    color: 1, 1, 1, 1
-                    font_size: 20
-                    size_hint: (.2, .25)
                     pos_hint: {'center_x':0.2, 'center_y':0.4}
                     on_press: 
                         root.manager.current = "calib_screen"
 
-                Button:
+                PButton:
                     text: "Save"
-                    color: 1, 1, 1, 1
-                    font_size: 20
-                    size_hint: (.2, .25)
                     pos_hint: {'center_x':0.5, 'center_y':0.4}
                     on_press: 
                         root.assign_variables()
+						root.show_popup()
 
-                Button:
+                PButton:
                     text: "Next"
-                    color: 1, 1, 1, 1
-                    font_size: 20
-                    size_hint: (.2, .25)
                     pos_hint: {'center_x':0.8, 'center_y':0.4}
                     on_press: 
                         root.manager.current = "param_screen_two"
@@ -240,90 +255,62 @@
 
             RelativeLayout:
 
-                Label:
-                    color: 0, 0, 0, 1
+                PLabel:
                     text: "Initial Step Size(deg)"
                     pos_hint:{'center_x':0.3, 'center_y':0.5}
 
-                TextInput:
+                PTextInput:
                     id: initd
-                    font_size: 20
-                    multiline: False 
-                    size_hint: (0.2, 0.2)
                     pos_hint:{'center_x': 0.7, 'center_y':0.5}
-                    focus: True
-
 
             RelativeLayout:
 
-                Label:
-                    color: 0, 0, 0, 1
+                PLabel:
                     text: "Finger width(mm)"
                     pos_hint:{'center_x':0.3, 'center_y':0.5}
 
-                TextInput:
+                PTextInput:
                     id: fwid
-                    font_size: 20
-                    multiline: False 
-                    size_hint: (0.2, 0.2)
                     pos_hint:{'center_x': 0.7, 'center_y':0.5}
-                    focus: True
 
             RelativeLayout:
 
-                Label:
-                    color: 0, 0, 0, 1
+                PLabel:
                     text: "[1] Finger length(mm)"
                     pos_hint:{'center_x':0.3, 'center_y':0.5}
 
-                TextInput:
+                PTextInput:
                     id: flen
-                    font_size: 20
-                    multiline: False 
-                    size_hint: (0.2, 0.2)
                     pos_hint:{'center_x': 0.7, 'center_y':0.5}
-                    focus: True
 
             RelativeLayout:
 
-                Label:
+                PLabel:
                     color: 0, 0, 0, 1
                     text: "[2] MP Joint Radius(mm)"
                     pos_hint:{'center_x':0.3, 'center_y':0.5}
 
-                TextInput:
+                PTextInput:
                     id: mprad 
-                    font_size: 20
-                    multiline: False 
-                    size_hint: (0.2, 0.2)
                     pos_hint:{'center_x': 0.7, 'center_y':0.5}
-                    focus: True
 
             RelativeLayout:
 
-                Button:
+                PButton:
                     text: "Back"
-                    color: 1, 1, 1, 1
-                    font_size: 20
-                    size_hint: (.2, .25)
                     pos_hint: {'center_x':0.2, 'center_y':0.4}
                     on_press: 
                         root.manager.current = "param_screen_one"
 
-                Button:
+                PButton:
                     text: "Save"
-                    color: 1, 1, 1, 1
-                    font_size: 20
-                    size_hint: (.2, .25)
                     pos_hint: {'center_x':0.5, 'center_y':0.4}
                     on_press: 
                         root.assign_variables()
+						root.show_popup2()
 
-                Button:
+                PButton:
                     text: "Next"
-                    color: 1, 1, 1, 1
-                    font_size: 20
-                    size_hint: (.2, .25)
                     pos_hint: {'center_x':0.8, 'center_y':0.4}
                     on_press: 
                         root.manager.current = "test_screen"
