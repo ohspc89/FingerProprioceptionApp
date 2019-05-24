@@ -1,0 +1,30 @@
+Agenda
+
+################### Screen configuration ###################
+
+1. How to set the MP joint position?
+2. Color change: what would be a good way to randomize? 
+	- alternating among the three choices
+3. How large should be the buttons / screen?
+
+############################################################
+
+
+############### Adaptive Staircase algorithm ###############
+
+1. Need to start studying Psi-Marginal
+2. If we go with Dr. Block's method...
+	- step size to be modified
+	- the rate of step size change should be modified
+	- are we checking if the response is correct?
+
+############################################################
+
+
+##################### App configuration ####################
+
+1. How to load it to a tablet?
+2. How to save data?
+	- once the app is running on a tablet
+
+############################################################

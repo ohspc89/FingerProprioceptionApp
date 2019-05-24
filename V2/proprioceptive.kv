@@ -1,0 +1,362 @@
+#:import math math
+
+# Intersecting gridlines for calibration
+<GridLines@Widget>:
+    # vertical line
+    canvas.before:
+        Color:
+            rgba: 1, 1, 1, 1
+        Rectangle:
+            pos: self.x, self.y
+            size: self.right, self.top
+        Color:
+            rgba: 0, 0, 0, 1
+        Line:
+            points: self.center_x, self.y, self.center_x, self.top
+            width: 2.
+    # horizontal line
+    canvas.after:
+        Color:
+            rgba: 0, 0, 0, 1
+        Line:
+            points: self.x, self.center_y, self.right, self.center_y
+            width: 2.
+
+# Button size is proportional to the screen size
+<CustomButton@Button>
+    size_hint: 0.3, 0.05
+    spacing: 10
+
+<ColorScreen@Widget>
+    # Initial screen color on the right: Blue 
+    bg_color_before: 0, 0, 1, 1
+    canvas.before:
+        Color:
+            rgba: self.bg_color_before
+        Rectangle:
+            pos: self.x, self.y 
+            size: self.width, self.height
+    # Initial screen color on the left: Red
+    bg_color_after: 1, 0, 0, 1
+
+    # initial info??
+    # This degree should be determined after the position of MP joint is set.
+    # left: < 0; right: > 0
+    # <degree> will be overridden by the <TestScreen> input
+    degree: -45 
+    # <num> will be overridden by the <TestScreen> input
+    num: 1
+    canvas.after:
+        Color:
+            rgba: self.bg_color_after
+        Quad:
+            # there may need further discussion regarding these points
+            # current setting of the MP joint = 0.7 * total width of the colored screen
+            points: [self.x, self.y, self.x, self.top, self.right*0.7 + self.height*math.tan(math.radians(self.degree)), self.top, self.right*0.7, self.y] if self.num == 1 else [self.x, self.y, self.x, self.top, self.right*0.3 + self.height*math.tan(math.radians(self.degree)), self.top, self.right*0.3, self.y]
+
+<CalibrationScreen>:
+    FloatLayout:
+        GridLines:
+            on_touch_down:
+				root.show_popup()
+                #root.manager.current = "param_screen_one"
+
+<CalibPopup>:
+    Button:
+		id: cpopup 
+		background_normal: ""
+		background_color: 1, 1, 1, 1
+		size_hint: 0.6, 0.5
+		pos_hint: {"x": 0.2, "y": 0.25}
+		text: "Touch HERE\n(If Calibration is COMPLETE)\n \nTouch OUTSIDE THIS WINDOW\n(Otherwise)"
+		color: 1, 0, 0, 1
+		font_size: 25
+		halign:"center"
+        on_press: 
+			app.root.current = "param_screen_one"
+			root.dismiss()
+
+<ParamPopup>:
+	argh: ppopup
+	Button:
+		id: ppopup
+		background_normal: ""
+		background_color: 1, 1, 1, 1
+		text: "INPUT SAVED!"
+		color: 0, 0, 1, 1
+		font_size: 25
+		haligh: "center"
+		size_hint: 0.6, 0.5
+		pos_hint: {"x":0.2, "y": 0.25}
+		on_press:
+			root.dismiss()
+		
+# 3 items repeatedly used in the two parameter input screens
+
+<PTextInput@TextInput>:
+	font_size: 20
+	multiline: False 
+	size_hint: (0.2, 0.2)
+	pos_hint:{'center_x': 0.55, 'center_y':0.5}
+	focus: True
+	
+<PLabel@Label>:
+	color: 0, 0, 0, 1
+	font_size: 20
+	pos_hint:{'center_x':0.2, 'center_y':0.5}
+
+<PButton@Button>:
+	color: 1, 1, 1, 1
+	font_size: 20
+	size_hint: (.2, .25)
+
+
+<ParamInputScreenOne>:
+    pid_text_input: pid 
+    age_text_input: age
+    BoxLayout:
+        orientation: "horizontal"
+
+        canvas:
+            Color:
+                rgba: 1, 1, 1, 0.95
+            Rectangle: 
+                size: self.right, self.top
+
+        Image:
+            source: "HSCL.jpg"
+            size: 400, 400 
+            pos: 20, 20 
+
+        BoxLayout:
+            orientation: "vertical"
+
+            RelativeLayout:
+
+                PLabel:
+                    text: "Participant ID"
+
+                PTextInput:
+                    id: pid
+
+            RelativeLayout:
+
+                PLabel:
+                    text: "Age"
+
+                PTextInput:
+                    id: age
+
+            RelativeLayout:
+
+                PLabel:
+                    text: "Gender"
+
+                CheckBox:
+                    id: malechk
+                    color: 0, 0, 0, 1
+                    group: "Gender"
+                    value: root.male
+                    pos_hint: {'center_x':.4}
+                    size_hint_x: 0.1
+                    on_active: root.if_active_m(self.active)
+
+                PLabel:
+                    text: "Male"
+                    pos_hint: {'center_x':.5}
+
+                CheckBox:
+                    id: femalechk
+                    color: 0, 0, 0, 1
+                    group: "Gender"
+                    value: root.female
+                    pos_hint: {'center_x':.6}
+                    size_hint_x: 0.1
+                    on_active: root.if_active_f(self.active)
+
+                PLabel:
+                    text: "Female"
+                    pos_hint: {'center_x':.7}
+
+            RelativeLayout:
+
+                PLabel:
+                    text: "Dominant hand"
+                    pos_hint: {'center_x':0.2}
+
+                CheckBox:
+                    id: leftchk
+                    color: 0, 0, 0, 1
+                    group: "dominant_hand"
+                    value: root.left
+                    pos_hint: {'center_x':.4}
+                    size_hint_x: 0.1
+                    on_active: root.if_active_l(self.active)
+
+                PLabel:
+                    text: "Left"
+                    pos_hint: {'center_x':.5}
+
+                CheckBox:
+                    id: rightchk
+                    color: 0, 0, 0, 1
+                    group: "dominant_hand"
+                    value: root.right
+                    pos_hint: {'center_x':.6}
+                    size_hint_x: 0.1
+                    on_active: root.if_active_r(self.active)
+
+                PLabel:
+                    text: "Right"
+                    pos_hint: {'center_x':.7}
+
+            RelativeLayout:
+
+                PButton:
+                    text: "Back"
+                    pos_hint: {'center_x':0.2, 'center_y':0.4}
+                    on_press: 
+                        root.manager.current = "calib_screen"
+
+                PButton:
+                    text: "Save"
+                    pos_hint: {'center_x':0.5, 'center_y':0.4}
+                    on_press: 
+                        root.assign_variables()
+						root.show_popup()
+
+                PButton:
+                    text: "Next"
+                    pos_hint: {'center_x':0.8, 'center_y':0.4}
+                    on_press: 
+                        root.manager.current = "param_screen_two"
+
+
+<ParamInputScreenTwo>:
+    flen_text_input: flen
+    fwid_text_input: fwid
+    initd_text_input: initd
+    mprad_text_input: mprad
+    BoxLayout:
+        orientation: "horizontal"
+
+        canvas:
+            Color:
+                rgba: 1, 1, 1, 0.95
+            Rectangle:
+                size: self.right, self.top
+        
+        Image:
+            source: "hand_image.png"
+            size: 400, 600
+            pos: 20, 20
+
+        BoxLayout:
+            orientation: "vertical"
+
+            RelativeLayout:
+
+                PLabel:
+                    text: "Initial Step Size(deg)"
+                    pos_hint:{'center_x':0.3, 'center_y':0.5}
+
+                PTextInput:
+                    id: initd
+                    pos_hint:{'center_x': 0.7, 'center_y':0.5}
+
+            RelativeLayout:
+
+                PLabel:
+                    text: "Finger width(mm)"
+                    pos_hint:{'center_x':0.3, 'center_y':0.5}
+
+                PTextInput:
+                    id: fwid
+                    pos_hint:{'center_x': 0.7, 'center_y':0.5}
+
+            RelativeLayout:
+
+                PLabel:
+                    text: "[1] Finger length(mm)"
+                    pos_hint:{'center_x':0.3, 'center_y':0.5}
+
+                PTextInput:
+                    id: flen
+                    pos_hint:{'center_x': 0.7, 'center_y':0.5}
+
+            RelativeLayout:
+
+                PLabel:
+                    color: 0, 0, 0, 1
+                    text: "[2] MP Joint Radius(mm)"
+                    pos_hint:{'center_x':0.3, 'center_y':0.5}
+
+                PTextInput:
+                    id: mprad 
+                    pos_hint:{'center_x': 0.7, 'center_y':0.5}
+
+            RelativeLayout:
+
+                PButton:
+                    text: "Back"
+                    pos_hint: {'center_x':0.2, 'center_y':0.4}
+                    on_press: 
+                        root.manager.current = "param_screen_one"
+
+                PButton:
+                    text: "Save"
+                    pos_hint: {'center_x':0.5, 'center_y':0.4}
+                    on_press: 
+                        root.assign_variables()
+						root.show_popup2()
+
+                PButton:
+                    text: "Next"
+                    pos_hint: {'center_x':0.8, 'center_y':0.4}
+                    on_press: 
+                        root.manager.current = "test_screen"
+
+# The actual color screen
+<TestScreen>:
+
+    handedness: cw
+
+    RelativeLayout:
+        CustomButton:
+            id: _more_left 
+            background_color: 1, 0, 0, 1
+            background_normal: ""
+            pos_hint: {'x':0.05, 'y':0.05}
+            on_press: root.on_the_left()
+
+        CustomButton:
+            id: _more_right
+            background_color: 0, 0, 1, 1
+            background_normal: ""
+            pos_hint: {'x':0.38, 'y':0.05}
+            on_press: root.on_the_right()
+
+        ColorScreen:
+            id: cw
+            # have the colorscreen be centered!!
+            pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+            size_hint: 0.9, 0.7
+            degree: -35
+            # <num> will be overridden by the choice of left or right
+            num: 0
+            # have this property to have an access to it all the time
+            quad_points: [self.x, self.y, self.x, self.top, self.right*0.7 + self.height*math.tan(math.radians(self.degree)), self.top, self.right*0.7, self.y] if self.num == 1 else [self.x, self.y, self.x, self.top, self.right*0.3 + self.height*math.tan(math.radians(self.degree)), self.top, self.right*0.3, self.y]
+
+<screen_manager>:
+    CalibrationScreen:
+        id: calibsc
+        name: "calib_screen"
+    ParamInputScreenOne:
+        id: paramscone
+        name: "param_screen_one"
+    ParamInputScreenTwo:
+        id: paramsc
+        name: "param_screen_two"
+    TestScreen:
+        id: testsc
+        name: "test_screen"
