@@ -40,11 +40,11 @@ This is a project to build an app that would test Hand Proprioception
     
 ### Needs to be done soon
 
-  The lower border of the test screen should be drawn with respect to the MP joint radius
+  - [ ] The lower border of the test screen should be drawn with respect to the MP joint radius
   
-  ~~The pop-up window to check if calibration is complete~~
+  - [x] The pop-up window to check if calibration is complete~~
   
-  ~~Color randomization -> not to overlap!!~~
+  - [x] Color randomization -> not to overlap!!~~
   
 ### Ideas
 
