@@ -28,6 +28,8 @@ class ParamInputScreenOne(Screen):
     right = ObjectProperty(True)
     left = ObjectProperty(False)
 
+    gender = ObjectProperty(None)
+
     # Popup window
     def show_popup(self):
 
@@ -42,7 +44,7 @@ class ParamInputScreenOne(Screen):
         self.pid = self.pid_text_input.text
         self.age = self.age_text_input.text
         # subject information
-        #print("pid:", self.pid, "age:", self.age, "gender:", self.gender, "Right_Dominant:", self.ids.rightchk.active)
+        print("pid:", self.pid, "age:", self.age, "gender:", self.gender, "Right_Dominant:", self.ids.rightchk.active)
 
 
     def if_active_m(self, state):

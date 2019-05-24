@@ -13,18 +13,19 @@
             rgba: 0, 0, 0, 1
         Line:
             points: self.center_x, self.y, self.center_x, self.top
+            width: 2.
     # horizontal line
     canvas.after:
         Color:
             rgba: 0, 0, 0, 1
         Line:
             points: self.x, self.center_y, self.right, self.center_y
+            width: 2.
 
 # Button size is proportional to the screen size
 <CustomButton@Button>
     size_hint: 0.3, 0.05
     spacing: 10
-
 
 <ColorScreen@Widget>
     # Initial screen color on the right: Blue 
