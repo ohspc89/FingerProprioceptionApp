@@ -40,17 +40,13 @@ This is a project to build an app that would test Hand Proprioception
     
 ### Needs to be done soon
 
-  - [ ] The lower border of the test screen should be drawn with respect to the MP joint radius
-  
-  - [x] The pop-up window to check if calibration is complete~~
-  
-  - [x] Color randomization -> not to overlap!!~~
+  - [] The lower border of the test screen should be drawn with respect to the MP joint radius
+  - [x] The pop-up window to check if calibration is complete  
+  - [x] Color randomization -> not to overlap!!
   
 ### Ideas
-
-  ~~1) Check if a researcher has correctly pushed the next button -> make "Next" doesn't work unless contents saved??~~
-  
-  -> Have the "Save" button to check if everything is correctly given.
+- [x] Check if a researcher has correctly pushed the next button -> make "Next" doesn't work unless contents saved??~~
+      >> Have the "Save" button to check if everything is correctly given.
   
 ## For V2 (ETA: First week of June)
   1) Experimental data should be saved somewhere
