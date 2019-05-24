@@ -5,6 +5,12 @@ from kivy.app import App
 from kivy.properties import ObjectProperty
 from kivy.uix.popup import Popup
 from kivy.uix.floatlayout import FloatLayout
+from kivy.storage.jsonstore import JsonStore
+import time
+
+# Get the start time of the experiment; will use this as the file name
+timestamp = time.strftime("%Y%m%d_%H:%M:%S")
+store = JsonStore(".".join([timestamp, 'json']))
 
 class CalibrationScreen(Screen):
 
@@ -13,7 +19,6 @@ class CalibrationScreen(Screen):
 
         the_popup = CalibPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
         the_popup.open()
-
 
 class CalibPopup(Popup):
     pass
@@ -29,6 +34,7 @@ class ParamInputScreenOne(Screen):
     left = ObjectProperty(False)
 
     gender = ObjectProperty(None)
+    handed_chk = ObjectProperty(False)
 
     # Popup window
     def show_popup(self):
@@ -36,8 +42,10 @@ class ParamInputScreenOne(Screen):
         the_popup = ParamPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
 
         # Check if any of the parameter inputs is missing!
-        if any([self.pid == "", self.age == "", self.gender == None, self.ids.rightchk.active == None]) is True:
+        if any([self.pid == "", self.age == "", self.gender == None, self.handed_chk == False]) is True:
             the_popup.argh.text = "Something's missing!"
+        else:
+            store.put("SUBJ_info", subid = self.pid, age = self.age, gender = self.gender, right_used = self.ids.rightchk.active)
         the_popup.open()
 
     def assign_variables(self):
@@ -62,10 +70,16 @@ class ParamInputScreenOne(Screen):
             self.parent.ids.testsc.handedness.num = 1
             self.parent.ids.testsc.handedness.degree = -35
 
+            # Just for fool-proof
+            self.handed_chk = True
+
     def if_active_l(self, state):
         if state:
             self.parent.ids.testsc.handedness.num = 0
             self.parent.ids.testsc.handedness.degree = 35
+
+            # Just for fool-proof
+            self.handed_chk = True
 
 class ParamInputScreenTwo(Screen):
 
@@ -77,6 +91,8 @@ class ParamInputScreenTwo(Screen):
         # Check if any of the parameter inputs is missing!
         if any([self.flen == "", self.fwid == "", self.initd == "", self.mprad == ""]):
             the_popup.argh.text = "Something's missing!"
+        else:
+            store.put("ANTH_measures", flen = self.flen, fwid = self.fwid, init_step = self.initd, MPJR = self.mprad)
         the_popup.open()
 
     def assign_variables(self):
@@ -151,6 +167,8 @@ class TestScreen(Screen):
         else:
             self.ids.cw.degree = temp_l
 
+        store.put("_".join(["TRIAL", str(self.trial_num), "info"]), rev_cnt = self.rev_count, choice = self.prev_choice[-1], deg = self.ids.cw.degree, step_size = self.delta_d)
+
         self.trial_num += 1
 
         # Print the trial number and the deviation angle(deg)
@@ -176,23 +194,14 @@ class TestScreen(Screen):
         else:
             self.ids.cw.degree = temp_r
 
+        store.put("_".join(["TRIAL", str(self.trial_num), "info"]), rev_cnt = self.rev_count, choice = self.prev_choice[-1], deg = self.ids.cw.degree, step_size = self.delta_d)
+
         self.trial_num += 1
 
         print(self.trial_num, self.ids.cw.degree)
 
-
-#screen_manager = ScreenManager(transition=FadeTransition())
-#screen_manager.add_widget(CalibrationScreen(name="screen_one"))
-#screen_manager.add_widget(ParamInputScreen(name="screen_two"))
-#screen_manager.add_widget(TestScreen(name="screen_three"))
-
 class screen_manager(ScreenManager):
     pass
-#    def __init__(self, **kwargs):
-#        super(screen_manager, self).__init__(**kwargs)
-#        self.add_widget(CalibrationScreen(name="screen_one"))
-#        self.add_widget(ParamInputScreen(name="screen_two"))
-#        self.add_widget(TestScreen(name="screen_three"))
 
 class ProprioceptiveApp(App):
     def build(self):
