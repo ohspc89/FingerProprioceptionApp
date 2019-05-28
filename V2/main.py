@@ -67,16 +67,16 @@ class ParamInputScreenOne(Screen):
     def if_active_r(self, state):
         if state:
             # Whill change the orientation of the testscreen's colorscreen
-            self.parent.ids.testsc.handedness.num = 1
-            self.parent.ids.testsc.handedness.degree = -35
+            self.parent.ids.testsc.handedness.dir = 1
+            #self.parent.ids.testsc.handedness.degree = -35
 
             # Just for fool-proof
             self.handed_chk = True
 
     def if_active_l(self, state):
         if state:
-            self.parent.ids.testsc.handedness.num = 0
-            self.parent.ids.testsc.handedness.degree = 35
+            self.parent.ids.testsc.handedness.dir = -1
+            #self.parent.ids.testsc.handedness.degree = 35
 
             # Just for fool-proof
             self.handed_chk = True
@@ -104,6 +104,8 @@ class ParamInputScreenTwo(Screen):
         # subject anthropometric information
         print("finger length:", self.flen, "finger width:", self.fwid, "initial ss:", self.initd, "MP Joint Radius:", self.mprad)
 
+        self.parent.ids.testsc.handedness.flen = self.flen
+        self.parent.ids.testsc.handedness.mprad = self.mprad
 
 class TestScreen(Screen):
 

@@ -24,8 +24,16 @@
 
 # Button size is proportional to the screen size
 <CustomButton@Button>
-    size_hint: 0.3, 0.05
+    size_hint: 0.3, 0.1 
     spacing: 10
+
+<CustomCircle@Widget>
+    canvas:
+        Color:
+            rgba: 0.5, 0.5, 1, 1
+        Ellipse:
+            pos: root.x, root.y
+            size: cm(0.5), cm(0.5)
 
 <ColorScreen@Widget>
     # Initial screen color on the right: Blue 
@@ -39,20 +47,18 @@
     # Initial screen color on the left: Red
     bg_color_after: 1, 0, 0, 1
 
-    # initial info??
-    # This degree should be determined after the position of MP joint is set.
-    # left: < 0; right: > 0
-    # <degree> will be overridden by the <TestScreen> input
-    degree: -45 
-    # <num> will be overridden by the <TestScreen> input
-    num: 1
+    # parameters(will be overridden later)
+    dir: 1 
+    flen: 6
+    degree: 25
+    mprad: 1
+
+    # The quadrilateral is overlayed
     canvas.after:
         Color:
             rgba: self.bg_color_after
         Quad:
-            # there may need further discussion regarding these points
-            # current setting of the MP joint = 0.7 * total width of the colored screen
-            points: [self.x, self.y, self.x, self.top, self.right*0.7 + self.height*math.tan(math.radians(self.degree)), self.top, self.right*0.7, self.y] if self.num == 1 else [self.x, self.y, self.x, self.top, self.right*0.3 + self.height*math.tan(math.radians(self.degree)), self.top, self.right*0.3, self.y]
+            points: [self.x, self.y, self.x, self.top, self.center_x + self.dir * cm(self.flen) * math.cos(math.radians(55)) + self.dir * cm(self.mprad) + self.height*math.tan(math.radians(self.degree)), self.top, self.center_x + self.dir * cm(self.flen) * math.cos(math.radians(55)) + self.dir * cm(self.mprad), self.y]
 
 <CalibrationScreen>:
     FloatLayout:
@@ -267,7 +273,7 @@
             RelativeLayout:
 
                 PLabel:
-                    text: "Finger width(mm)"
+                    text: "Finger width(cm)"
                     pos_hint:{'center_x':0.3, 'center_y':0.5}
 
                 PTextInput:
@@ -277,7 +283,7 @@
             RelativeLayout:
 
                 PLabel:
-                    text: "[1] Finger length(mm)"
+                    text: "[1] Finger length(cm)"
                     pos_hint:{'center_x':0.3, 'center_y':0.5}
 
                 PTextInput:
@@ -288,7 +294,7 @@
 
                 PLabel:
                     color: 0, 0, 0, 1
-                    text: "[2] MP Joint Radius(mm)"
+                    text: "[2] MP Joint Radius(cm)"
                     pos_hint:{'center_x':0.3, 'center_y':0.5}
 
                 PTextInput:
@@ -321,31 +327,51 @@
 
     handedness: cw
 
-    RelativeLayout:
+    FloatLayout:
         CustomButton:
             id: _more_left 
             background_color: 1, 0, 0, 1
             background_normal: ""
-            pos_hint: {'x':0.05, 'y':0.05}
+            # move the button to the right if your dominant hand is left 
+            pos_hint: {'x':0.015, 'y': 0.1} if root.ids.cw.dir == 1 else {'x': 0.345, 'y':0.1} 
             on_press: root.on_the_left()
 
         CustomButton:
             id: _more_right
             background_color: 0, 0, 1, 1
             background_normal: ""
-            pos_hint: {'x':0.38, 'y':0.05}
+            # Button positions may need more discussion
+            pos_hint: {'x':0.35, 'y':0.1} if root.ids.cw.dir == 1 else {'x':0.69, 'y':0.1}
             on_press: root.on_the_right()
 
         ColorScreen:
             id: cw
             # have the colorscreen be centered!!
-            pos_hint: {'center_x': 0.5, 'center_y': 0.5}
-            size_hint: 0.9, 0.7
-            degree: -35
-            # <num> will be overridden by the choice of left or right
-            num: 0
-            # have this property to have an access to it all the time
-            quad_points: [self.x, self.y, self.x, self.top, self.right*0.7 + self.height*math.tan(math.radians(self.degree)), self.top, self.right*0.7, self.y] if self.num == 1 else [self.x, self.y, self.x, self.top, self.right*0.3 + self.height*math.tan(math.radians(self.degree)), self.top, self.right*0.3, self.y]
+            size_hint: (None, None)
+            # width: 1 cm less than the width of the display
+            # height: from MP joint to the 1 cm below the top of the display
+            size: root.width - cm(1), root.height - root.center_y + math.sin(math.radians(55)) * cm(self.flen) - cm(1)
+
+            # This bottom left corner position
+            pos: (root.x + cm(0.5), root.center_y - math.sin(math.radians(55)) * cm(self.flen))
+
+            # Initial tilt
+            degree: -1 * self.dir * 25 
+
+            # <dir> will be given by the choice of left or right
+            # 1: Right / -1: Left
+            # <flen> will be given by the input of the finger length in ParamInputScreenTwo
+
+            # This is used to update the position of the moving point
+            quad_points : [self.x, self.y, self.x, self.top, self.center_x + self.dir * cm(self.flen) * math.cos(math.radians(55)) + self.dir * cm(self.mprad) + self.height*math.tan(math.radians(self.degree)), self.top, self.center_x + self.dir * cm(self.flen) * math.cos(math.radians(55)) + self.dir * cm(self.mprad), self.y]        
+
+        # Display center
+        CustomCircle:
+            pos: (root.center_x - cm(0.25), root.center_y - cm(0.25))
+
+        # MP point
+        CustomCircle:
+            pos: (root.center_x + root.ids.cw.dir*math.cos(math.radians(55)) * cm(root.ids.cw.flen) + root.ids.cw.dir * cm(root.ids.cw.mprad) - cm(0.25), root.center_y - math.sin(math.radians(55)) * cm(root.ids.cw.flen) - cm(0.25))
 
 <screen_manager>:
     CalibrationScreen:
