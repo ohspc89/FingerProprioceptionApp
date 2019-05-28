@@ -51,8 +51,8 @@ This is a project to build an app that would test Hand Proprioception
 ## For V2 (ETA: First week of June)
 - [x] Experimental data should be saved somewhere
 - [ ] Drop-down menu for different options
-      1. Mean & SD (Priority)\
-      
+
+      1. Mean & SD (Priority)\      
       2. Typical psychophysical function\
       3. Psi-marginal
 - [x] The python filename should be "main.py" [Kivy Buildozer requirement]
