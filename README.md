@@ -40,7 +40,7 @@ This is a project to build an app that would test Hand Proprioception
     
 ### Needs to be done soon
 
-  - [ ] The lower border of the test screen should be drawn with respect to the MP joint radius
+  - [x] The lower border of the test screen should be drawn with respect to the MP joint radius
   - [x] The pop-up window to check if calibration is complete  
   - [x] Color randomization -> not to overlap!!
   
@@ -51,7 +51,7 @@ This is a project to build an app that would test Hand Proprioception
 ## For V2 (ETA: First week of June)
 - [x] Experimental data should be saved somewhere
 - [ ] Drop-down menu for different options
-      1. Mean & SD [Priority]
+      1. Mean & SD (Priority) \\
       2. Typical psychophysical function
       3. Psi-marginal
 - [x] The python filename should be "main.py" [Kivy Buildozer requirement]
