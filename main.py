@@ -2,7 +2,7 @@ import math
 from random import randrange
 from kivy.uix.screenmanager import Screen, ScreenManager, FadeTransition
 from kivy.app import App
-from kivy.properties import ObjectProperty
+from kivy.properties import ObjectProperty, StringProperty
 from kivy.uix.popup import Popup
 from kivy.uix.floatlayout import FloatLayout
 from kivy.storage.jsonstore import JsonStore
@@ -36,24 +36,18 @@ class ParamInputScreenOne(Screen):
     gender = ObjectProperty(None)
     handed_chk = ObjectProperty(False)
 
-    # Popup window
+    # Popup window to check if everything is saved properly
     def show_popup(self):
 
         the_popup = ParamPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
 
         # Check if any of the parameter inputs is missing!
-        if any([self.pid == "", self.age == "", self.gender == None, self.handed_chk == False]) is True:
-            the_popup.argh.text = "Something's missing!"
+        if any([self.pid_text_input.text == "", self.age_text_input.text == "", self.gender == None, self.handed_chk == False]) is True:
+            the_popup.argh.text = "VALUE MISSING"
+            the_popup.open()
         else:
-            store.put("SUBJ_info", subid = self.pid, age = self.age, gender = self.gender, right_used = self.ids.rightchk.active)
-        the_popup.open()
-
-    def assign_variables(self):
-        self.pid = self.pid_text_input.text
-        self.age = self.age_text_input.text
-        # subject information
-        print("pid:", self.pid, "age:", self.age, "gender:", self.gender, "Right_Dominant:", self.ids.rightchk.active)
-
+            store.put("SUBJ_info", subid = self.pid_text_input.text, age = self.age_text_input.text, gender = self.gender, right_used = self.ids.rightchk.active)
+            self.parent.current = "param_screen_two"
 
     def if_active_m(self, state):
         if state:
@@ -83,29 +77,21 @@ class ParamInputScreenOne(Screen):
 
 class ParamInputScreenTwo(Screen):
 
-    # Popup window
+    # Popup window to check if everything is entered
     def show_popup2(self):
 
         the_popup = ParamPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
 
         # Check if any of the parameter inputs is missing!
-        if any([self.flen == "", self.fwid == "", self.initd == "", self.mprad == ""]):
+        if any([self.flen_text_input.text == "", self.fwid_text_input.text == "", self.initd_text_input.text == "", self.mprad_text_input.text == ""]):
             the_popup.argh.text = "Something's missing!"
+            the_popup.open()
         else:
-            store.put("ANTH_measures", flen = self.flen, fwid = self.fwid, init_step = self.initd, MPJR = self.mprad)
-        the_popup.open()
+            store.put("ANTH_measures", flen = self.flen_text_input.text, fwid = self.fwid_text_input.text, init_step = self.initd_text_input.text, MPJR = self.mprad_text_input.text)
 
-    def assign_variables(self):
-        self.flen = self.flen_text_input.text
-        self.fwid = self.fwid_text_input.text
-        self.initd = self.initd_text_input.text
-        self.mprad = self.mprad_text_input.text
-
-        # subject anthropometric information
-        print("finger length:", self.flen, "finger width:", self.fwid, "initial ss:", self.initd, "MP Joint Radius:", self.mprad)
-
-        self.parent.ids.testsc.handedness.flen = self.flen
-        self.parent.ids.testsc.handedness.mprad = self.mprad
+            # Give the mp joint radius input to draw the test screen display
+            self.parent.ids.testsc.handedness.mprad = self.mprad_text_input.text
+            self.parent.current = "test_screen"
 
 class TestScreen(Screen):
 
@@ -146,7 +132,7 @@ class TestScreen(Screen):
         self.prev_choice.append(response)
 
     def update_delta_d(self):
-        self.delta_d = float(self.parent.ids.paramsc.initd)
+        self.delta_d = float(self.parent.ids.paramsc.initd_text_input.text)
         if self.rev_count > 0:
             self.delta_d = self.delta_d / (2.0**self.rev_count)
 

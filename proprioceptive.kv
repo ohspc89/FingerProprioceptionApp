@@ -49,16 +49,16 @@
 
     # parameters(will be overridden later)
     dir: 1 
-    flen: 6
+    #flen: 6
     degree: 25
-    mprad: 1
+    mprad: 0.5
 
     # The quadrilateral is overlayed
     canvas.after:
         Color:
             rgba: self.bg_color_after
         Quad:
-            points: [self.x, self.y, self.x, self.top, self.center_x + self.dir * cm(self.flen) * math.cos(math.radians(55)) + self.dir * cm(self.mprad) + self.height*math.tan(math.radians(self.degree)), self.top, self.center_x + self.dir * cm(self.flen) * math.cos(math.radians(55)) + self.dir * cm(self.mprad), self.y]
+            points: [self.x, self.y, self.x, self.top, self.center_x + self.dir * cm(4) * math.cos(math.radians(55)) + self.dir * cm(self.mprad) * math.cos(math.radians(35)) + self.height*math.tan(math.radians(self.degree)), self.top, self.center_x + self.dir * cm(4) * math.cos(math.radians(55)) + self.dir * cm(self.mprad) * math.cos(math.radians(35)), self.y]
 
 <CalibrationScreen>:
     FloatLayout:
@@ -220,22 +220,16 @@
 
                 PButton:
                     text: "Back"
-                    pos_hint: {'center_x':0.2, 'center_y':0.4}
+                    pos_hint: {'center_x':0.3, 'center_y':0.4}
                     on_press: 
                         root.manager.current = "calib_screen"
 
                 PButton:
-                    text: "Save"
-                    pos_hint: {'center_x':0.5, 'center_y':0.4}
-                    on_press: 
-                        root.assign_variables()
-						root.show_popup()
-
-                PButton:
+                    id: next1
                     text: "Next"
-                    pos_hint: {'center_x':0.8, 'center_y':0.4}
+                    pos_hint: {'center_x':0.6, 'center_y':0.4}
                     on_press: 
-                        root.manager.current = "param_screen_two"
+                        root.show_popup()
 
 
 <ParamInputScreenTwo>:
@@ -273,7 +267,7 @@
             RelativeLayout:
 
                 PLabel:
-                    text: "Finger width(cm)"
+                    text: "[1] Finger width(mm)"
                     pos_hint:{'center_x':0.3, 'center_y':0.5}
 
                 PTextInput:
@@ -283,7 +277,7 @@
             RelativeLayout:
 
                 PLabel:
-                    text: "[1] Finger length(cm)"
+                    text: "[2] Finger length(mm)"
                     pos_hint:{'center_x':0.3, 'center_y':0.5}
 
                 PTextInput:
@@ -294,7 +288,7 @@
 
                 PLabel:
                     color: 0, 0, 0, 1
-                    text: "[2] MP Joint Radius(cm)"
+                    text: "[3] MP Joint Radius(cm)"
                     pos_hint:{'center_x':0.3, 'center_y':0.5}
 
                 PTextInput:
@@ -305,22 +299,16 @@
 
                 PButton:
                     text: "Back"
-                    pos_hint: {'center_x':0.2, 'center_y':0.4}
+                    pos_hint: {'center_x':0.3, 'center_y':0.4}
                     on_press: 
                         root.manager.current = "param_screen_one"
 
-                PButton:
-                    text: "Save"
-                    pos_hint: {'center_x':0.5, 'center_y':0.4}
-                    on_press: 
-                        root.assign_variables()
-						root.show_popup2()
 
                 PButton:
                     text: "Next"
-                    pos_hint: {'center_x':0.8, 'center_y':0.4}
+                    pos_hint: {'center_x':0.6, 'center_y':0.4}
                     on_press: 
-                        root.manager.current = "test_screen"
+                        root.show_popup2()
 
 # The actual color screen
 <TestScreen>:
@@ -350,20 +338,19 @@
             size_hint: (None, None)
             # width: 1 cm less than the width of the display
             # height: from MP joint to the 1 cm below the top of the display
-            size: root.width - cm(1), root.height - root.center_y + math.sin(math.radians(55)) * cm(self.flen) - cm(1)
+            size: root.width - cm(1), root.height - root.center_y + math.sin(math.radians(55)) * cm(4) - math.sin(math.radians(35)) * cm(self.mprad) - cm(1)
 
             # This bottom left corner position
-            pos: (root.x + cm(0.5), root.center_y - math.sin(math.radians(55)) * cm(self.flen))
+            pos: (root.x + cm(0.5), root.center_y - math.sin(math.radians(55)) * cm(4) + math.sin(math.radians(35)) * cm(self.mprad))
 
             # Initial tilt
             degree: -1 * self.dir * 25 
 
             # <dir> will be given by the choice of left or right
             # 1: Right / -1: Left
-            # <flen> will be given by the input of the finger length in ParamInputScreenTwo
 
             # This is used to update the position of the moving point
-            quad_points : [self.x, self.y, self.x, self.top, self.center_x + self.dir * cm(self.flen) * math.cos(math.radians(55)) + self.dir * cm(self.mprad) + self.height*math.tan(math.radians(self.degree)), self.top, self.center_x + self.dir * cm(self.flen) * math.cos(math.radians(55)) + self.dir * cm(self.mprad), self.y]        
+            quad_points : [self.x, self.y, self.x, self.top, self.center_x + self.dir * cm(4) * math.cos(math.radians(55)) + self.dir * cm(self.mprad) * math.cos(math.radians(35)) + self.height*math.tan(math.radians(self.degree)), self.top, self.center_x + self.dir * cm(4) * math.cos(math.radians(55)) + self.dir * cm(self.mprad) * math.cos(math.radians(35)), self.y]        
 
         # Display center
         CustomCircle:
@@ -371,7 +358,7 @@
 
         # MP point
         CustomCircle:
-            pos: (root.center_x + root.ids.cw.dir*math.cos(math.radians(55)) * cm(root.ids.cw.flen) + root.ids.cw.dir * cm(root.ids.cw.mprad) - cm(0.25), root.center_y - math.sin(math.radians(55)) * cm(root.ids.cw.flen) - cm(0.25))
+            pos: (root.center_x + root.ids.cw.dir*math.cos(math.radians(55)) * cm(4) + root.ids.cw.dir * cm(root.ids.cw.mprad) * math.cos(math.radians(35)) - cm(0.25), root.center_y - math.sin(math.radians(55)) * cm(4) + math.sin(math.radians(35)) * cm(root.ids.cw.mprad) - cm(0.25))
 
 <screen_manager>:
     CalibrationScreen:
