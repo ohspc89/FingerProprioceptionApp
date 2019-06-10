@@ -9,6 +9,8 @@ from kivy.storage.jsonstore import JsonStore
 import os, time
 from kivy import platform
 
+timestamp = time.strftime("%Y%m%d_%H:%M:%S")
+
 # If running on an android device, set the right path to save the JSON file
 if platform == 'android':
     from jnius import autoclass, cast, JavaException
@@ -23,12 +25,11 @@ if platform == 'android':
     context = cast('android.content.Context', PythonActivity.mActivity)
     private_storage = context.getExternalFilesDir(Environment.getDataDirectory().getAbsolutePath()).getAbsolutePath()
 
-# This is mainly for testing on a Linux Desktop
-else:
-    private_storage = os.curdir
+    store = JsonStore(".".join([private_storage, timestamp, 'json']))
 
-timestamp = time.strftime("%Y%m%d_%H:%M:%S")
-store = JsonStore(".".join([private_storage, timestamp, 'json']))
+# This is mainly for testing on a Linux Desktop
+else: 
+    store = JsonStore(".".join([timestamp, 'json']))
 
 class CalibrationScreen(Screen):
 
@@ -213,7 +214,6 @@ class ProprioceptiveApp(App):
 
     def build(self):
         return screen_manager(transition=FadeTransition())
-
 
 if __name__ == '__main__':
     ProprioceptiveApp().run()
