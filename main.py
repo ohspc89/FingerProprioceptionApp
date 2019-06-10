@@ -6,11 +6,27 @@ from kivy.properties import ObjectProperty, StringProperty
 from kivy.uix.popup import Popup
 from kivy.uix.floatlayout import FloatLayout
 from kivy.storage.jsonstore import JsonStore
-import time
+import os, time
+from kivy import platform
 
-# Get the start time of the experiment; will use this as the file name
+if platform == 'android':
+    from jnius import autoclass, cast, JavaException
+
+    try:
+        PythonActivity = autoclass('org.kivy.android.PythonActivity')
+    except JavaException:
+        PythonActivity = autoclass('org.renpy.android.PythonActivity')
+
+
+    Environment = autoclass('android.os.Environment')
+    context = cast('android.content.Context', PythonActivity.mActivity)
+    private_storage = context.getExternalFilesDir(Environment.getDataDirectory().getAbsolutePath()).getAbsolutePath()
+
+else:
+    private_storage = os.curdir
+
 timestamp = time.strftime("%Y%m%d_%H:%M:%S")
-store = JsonStore(".".join([timestamp, 'json']))
+store = JsonStore(".".join([private_storage, timestamp, 'json']))
 
 class CalibrationScreen(Screen):
 
@@ -43,7 +59,7 @@ class ParamInputScreenOne(Screen):
 
         # Check if any of the parameter inputs is missing!
         if any([self.pid_text_input.text == "", self.age_text_input.text == "", self.gender == None, self.handed_chk == False]) is True:
-            the_popup.argh.text = "VALUE MISSING"
+            the_popup.argh.text = os.path.abspath(private_storage) 
             the_popup.open()
         else:
             store.put("SUBJ_info", subid = self.pid_text_input.text, age = self.age_text_input.text, gender = self.gender, right_used = self.ids.rightchk.active)
@@ -192,8 +208,14 @@ class screen_manager(ScreenManager):
     pass
 
 class ProprioceptiveApp(App):
+
+
     def build(self):
         return screen_manager(transition=FadeTransition())
+
+    def get_path_android_data(self):
+
+        return private_storage
 
 if __name__ == '__main__':
     ProprioceptiveApp().run()
