@@ -9,6 +9,7 @@ from kivy.storage.jsonstore import JsonStore
 import os, time
 from kivy import platform
 
+# If running on an android device, set the right path to save the JSON file
 if platform == 'android':
     from jnius import autoclass, cast, JavaException
 
@@ -22,6 +23,7 @@ if platform == 'android':
     context = cast('android.content.Context', PythonActivity.mActivity)
     private_storage = context.getExternalFilesDir(Environment.getDataDirectory().getAbsolutePath()).getAbsolutePath()
 
+# This is mainly for testing on a Linux Desktop
 else:
     private_storage = os.curdir
 
@@ -59,7 +61,7 @@ class ParamInputScreenOne(Screen):
 
         # Check if any of the parameter inputs is missing!
         if any([self.pid_text_input.text == "", self.age_text_input.text == "", self.gender == None, self.handed_chk == False]) is True:
-            the_popup.argh.text = os.path.abspath(private_storage) 
+            the_popup.argh.text = "Value Missing!" 
             the_popup.open()
         else:
             store.put("SUBJ_info", subid = self.pid_text_input.text, age = self.age_text_input.text, gender = self.gender, right_used = self.ids.rightchk.active)
@@ -209,13 +211,9 @@ class screen_manager(ScreenManager):
 
 class ProprioceptiveApp(App):
 
-
     def build(self):
         return screen_manager(transition=FadeTransition())
 
-    def get_path_android_data(self):
-
-        return private_storage
 
 if __name__ == '__main__':
     ProprioceptiveApp().run()
