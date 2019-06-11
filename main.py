@@ -155,26 +155,54 @@ class TestScreen(Screen):
         if self.rev_count > 0:
             self.delta_d = self.delta_d / (2.0**self.rev_count)
 
-    def on_the_left(self):
+    def where_is_your_finger(self, rel_pos):
 
+        # change the colors of the screen
         self.change_col_setting()
 
         # Add the current choice, check if reversal is happening
-        self.track_rev('otl')
+        self.track_rev(rel_pos)
+
+        # Save the current degree
+        degree_current = self.ids.cw.degree
+
+        # Check if the respons('on the left' or 'on the right') is correct 
+        # Get the current third x-coordinate of the quadrilateral, or the fourth point of the quadrilateral
+        # Compare it with the true third x-coordinate of the quadrilateral
+        # If the current x-coordinate is greater than the true value, the correct answer should be "left"
+        # If the current x-coordinate is smaller than the true value, the correct answer should be "right"
+        # If neither, the response is "on_the_spot"
+        x_coord_current = self.ids.cw.quad_points[4]
+        if x_coord_current > self.ids.cw.x_correct:
+            correct_ans = "left"
+        elif x_coord_current < self.ids.cw.x_correct:
+            correct_ans = "right"
+        else:
+            correct_ans = "on_the_spot"
 
         # Based on the updated reversal count, calculate the delta_d
         self.update_delta_d()
 
         # next step deviation angle
-        temp_l = self.ids.cw.degree - self.delta_d
+        if rel_pos == 'left':
+            temp = self.ids.cw.degree - self.delta_d
 
-        # Set the left limit
-        if (self.ids.cw.quad_points[6] + self.ids.cw.height*math.tan(math.radians(temp_l)) < self.ids.cw.x):
-            self.ids.cw.degree = math.degrees(math.atan((self.ids.cw.x - self.ids.cw.quad_points[6]) / self.ids.cw.height))
-        else:
-            self.ids.cw.degree = temp_l
+            # Set the left limit
+            if (self.ids.cw.quad_points[6] + self.ids.cw.height*math.tan(math.radians(temp)) < self.ids.cw.x):
+                self.ids.cw.degree = math.degrees(math.atan((self.ids.cw.x - self.ids.cw.quad_points[6]) / self.ids.cw.height))
+            else:
+                self.ids.cw.degree = temp
 
-        store.put("_".join(["TRIAL", str(self.trial_num), "info"]), rev_cnt = self.rev_count, choice = self.prev_choice[-1], deg = self.ids.cw.degree, step_size = self.delta_d)
+        elif rel_pos == 'right':
+            temp = self.ids.cw.degree + self.delta_d
+
+            # Set the right limit
+            if (self.ids.cw.quad_points[6] + self.ids.cw.height*math.tan(math.radians(temp)) > self.ids.cw.right):
+                self.ids.cw.degree = math.degrees(math.atan((self.ids.cw.right - self.ids.cw.quad_points[6]) / self.ids.cw.height))
+            else:
+                self.ids.cw.degree = temp
+
+        store.put("_".join(["TRIAL", str(self.trial_num)]), rev_cnt = self.rev_count, choice = self.prev_choice[-1], deg = degree_current, step_size = self.delta_d, correct_x = self.ids.cw.x_correct, x_coord_current = x_coord_current, correct_ans = correct_ans, response_correct = rel_pos == correct_ans)
 
         self.trial_num += 1
 
@@ -182,30 +210,7 @@ class TestScreen(Screen):
         # The value of the deviation angle is the angle between
         # - the vertical line that passes the MP joint
         # - the line that connects the MP joint and the upper right point of the quadrilateral
-        print(self.trial_num, self.ids.cw.degree)
-
-
-    def on_the_right(self):
-
-        self.change_col_setting()
-
-        self.track_rev('otr')
-
-        self.update_delta_d()
-
-        temp_r = self.ids.cw.degree + self.delta_d
-
-        # Set the right limit
-        if (self.ids.cw.quad_points[6] + self.ids.cw.height*math.tan(math.radians(temp_r)) > self.ids.cw.right):
-            self.ids.cw.degree = math.degrees(math.atan((self.ids.cw.right - self.ids.cw.quad_points[6]) / self.ids.cw.height))
-        else:
-            self.ids.cw.degree = temp_r
-
-        store.put("_".join(["TRIAL", str(self.trial_num), "info"]), rev_cnt = self.rev_count, choice = self.prev_choice[-1], deg = self.ids.cw.degree, step_size = self.delta_d)
-
-        self.trial_num += 1
-
-        print(self.trial_num, self.ids.cw.degree)
+        # print(self.trial_num, self.ids.cw.degree)
 
 class screen_manager(ScreenManager):
     pass
