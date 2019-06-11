@@ -5,7 +5,7 @@ Agenda
 [Done] 1. How to set the MP joint position?
 [Done] 2. Color change: what would be a good way to randomize?
 	- alternating among the three choices~~
-3. How large should be the buttons / screen?
+[Done] 3. How large should be the buttons / screen?
 
 ############################################################
 
@@ -16,7 +16,7 @@ Agenda
 2. If we go with Dr. Block's method...
 	[Done] - step size to be modified
 	[Done] - the rate of step size change should be modified
-	[In Progress] - are we checking if the response is correct?
+	[Done] - are we checking if the response is correct?
 
 ############################################################
 
@@ -24,7 +24,7 @@ Agenda
 ##################### App configuration ####################
 
 [Done] 1. How to load it to a tablet?
-[In Progress] 2. How to save data?
+[Done] 2. How to save data?
 	- once the app is running on a tablet
 
 ############################################################
