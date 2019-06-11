@@ -24,7 +24,7 @@
 
 # Button size is proportional to the screen size
 <CustomButton@Button>
-    size_hint: 0.3, 0.1 
+    size_hint: 0.25, 0.1 
     spacing: 10
 
 <CustomCircle@Widget>
@@ -51,17 +51,20 @@
     dir: 1 
     #flen: 6
     degree: 25
-    mprad: 0.5
+    mprad: 5
 
 	# device angle
 	theta: 55
+
+	# diagonal distance
+	diag: 3
 
     # The quadrilateral is overlayed
     canvas.after:
         Color:
             rgba: self.bg_color_after
         Quad:
-            points: [self.x, self.y, self.x, self.top, self.center_x + self.dir * cm(4) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad) * math.cos(math.radians(90 - self.theta)) + self.height*math.tan(math.radians(self.degree)), self.top, self.center_x + self.dir * cm(4) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad) * math.cos(math.radians(90 - self.theta)), self.y]
+            points: [self.x, self.y, self.x, self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)) + self.height*math.tan(math.radians(self.degree)), self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)), self.y]
 
 <CalibrationScreen>:
     FloatLayout:
@@ -291,7 +294,7 @@
 
                 PLabel:
                     color: 0, 0, 0, 1
-                    text: "[3] MP Joint Radius(cm)"
+                    text: "[3] MP Joint Radius(mm)"
                     pos_hint:{'center_x':0.3, 'center_y':0.5}
 
                 PTextInput:
@@ -324,7 +327,7 @@
             background_color: 1, 0, 0, 1
             background_normal: ""
             # move the button to the right if your dominant hand is left 
-            pos_hint: {'x':0.015, 'y': 0.1} if root.ids.cw.dir == 1 else {'x': 0.345, 'y':0.1} 
+            pos_hint: {'x':0.03, 'y': 0.1} if root.ids.cw.dir == 1 else {'x': 0.445, 'y':0.1} 
             on_press: root.where_is_your_finger('left')
 
         CustomButton:
@@ -332,8 +335,14 @@
             background_color: 0, 0, 1, 1
             background_normal: ""
             # Button positions may need more discussion
-            pos_hint: {'x':0.35, 'y':0.1} if root.ids.cw.dir == 1 else {'x':0.69, 'y':0.1}
+            pos_hint: {'x':0.305, 'y':0.1} if root.ids.cw.dir == 1 else {'x':0.72, 'y':0.1}
             on_press: root.where_is_your_finger('right')
+
+		CustomButton:
+			text: "Back"
+			pos_hint: {'x':0.72, 'y':0.1} if root.ids.cw.dir == 1 else {'x': 0.03, 'y':0.1}
+			on_press: 
+				root.manager.current = "param_screen_two"
 
         ColorScreen:
             id: cw
@@ -344,11 +353,10 @@
 			topspace: 1.0
 
             # height: from MP joint to the 1 cm below the top of the display
-            size: root.width - cm(self.topspace), root.height - root.center_y + math.sin(math.radians(self.theta)) * cm(4) - math.sin(math.radians(90 - self.theta)) * cm(self.mprad) - cm(self.topspace)
-
+            size: root.width - cm(self.topspace), root.height - root.center_y + math.sin(math.radians(self.theta)) * cm(self.diag) - math.sin(math.radians(90 - self.theta)) * cm(self.mprad/10.0) - cm(self.topspace)
 
             # This bottom left corner position
-            pos: (root.x + cm(self.topspace/2.0), root.center_y - math.sin(math.radians(self.theta)) * cm(4) + math.sin(math.radians(90 - self.theta)) * cm(self.mprad))
+            pos: (root.x + cm(self.topspace/2.0), root.center_y - math.sin(math.radians(self.theta)) * cm(self.diag) + math.sin(math.radians(90 - self.theta)) * cm(self.mprad/10.0))
 
             # Initial tilt
             degree: -1 * self.dir * 25 
@@ -357,8 +365,8 @@
             # 1: Right / -1: Left
 
             # This is used to update the position of the moving point
-            quad_points : [self.x, self.y, self.x, self.top, self.center_x + self.dir * cm(4) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad) * math.cos(math.radians(90 - self.theta)) + self.height*math.tan(math.radians(self.degree)), self.top, self.center_x + self.dir * cm(4) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad) * math.cos(math.radians(90 - self.theta)), self.y]        
-			x_correct: self.center_x + self.dir * cm(4) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad) * math.cos(math.radians(90 - self.theta)) - self.dir * self.height * math.tan(math.radians(90 - self.theta)) 
+            quad_points : [self.x, self.y, self.x, self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)) + self.height*math.tan(math.radians(self.degree)), self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)), self.y]        
+			x_correct: self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)) - self.dir * self.height * math.tan(math.radians(90 - self.theta)) 
 
         # Display center
         CustomCircle:
@@ -366,7 +374,8 @@
 
         # MP point
         CustomCircle:
-            pos: (root.center_x + root.ids.cw.dir*math.cos(math.radians(55)) * cm(4) + root.ids.cw.dir * cm(root.ids.cw.mprad) * math.cos(math.radians(35)) - cm(0.25), root.center_y - math.sin(math.radians(55)) * cm(4) + math.sin(math.radians(35)) * cm(root.ids.cw.mprad) - cm(0.25))
+            pos: (root.center_x + root.ids.cw.dir*math.cos(math.radians(root.ids.cw.theta)) * cm(root.ids.cw.diag) + root.ids.cw.dir * cm(root.ids.cw.mprad/10.0) * math.cos(math.radians(90 - root.ids.cw.theta)) - cm(0.25), root.center_y - math.sin(math.radians(root.ids.cw.theta)) * cm(root.ids.cw.diag) + math.sin(math.radians(90 - root.ids.cw.theta)) * cm(root.ids.cw.mprad/10.0) - cm(0.25))
+
 
 <screen_manager>:
     CalibrationScreen:
