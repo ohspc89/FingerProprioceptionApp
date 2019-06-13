@@ -216,13 +216,13 @@ class TestScreen(Screen):
 
         # Switch screen if a participant has reached 20 trials or reversed 5 times
         if self.trial_num == 20 or self.rev_count == 5:
-            if self.trial_num >= 20:
+            if self.session_num == 1:
                 self.parent.current = "outcome_screen"
             else:
+                # A new session begins
+                self.session_num = 1
                 # Count the reverse from the beginning
                 self.rev_count = 0
-                # A new session starts
-                self.session_num += 1
                 # New display setting
                 self.ids.cw.degree = -1 * self.ids.cw.dir * 55
                 # There's no turning back
