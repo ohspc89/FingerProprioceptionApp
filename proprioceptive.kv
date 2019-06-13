@@ -320,14 +320,17 @@
 <TestScreen>:
 
     handedness: cw
+	backbutton: _backward
 
     FloatLayout:
+		id: layout
         CustomButton:
             id: _more_left 
             background_color: 1, 0, 0, 1
             background_normal: ""
             # move the button to the right if your dominant hand is left 
             pos_hint: {'x':0.03, 'y': 0.1} if root.ids.cw.dir == 1 else {'x': 0.445, 'y':0.1} 
+			disabled: False
             on_press: root.where_is_your_finger('left')
 
         CustomButton:
@@ -336,13 +339,27 @@
             background_normal: ""
             # Button positions may need more discussion
             pos_hint: {'x':0.305, 'y':0.1} if root.ids.cw.dir == 1 else {'x':0.72, 'y':0.1}
+			disabled: False
             on_press: root.where_is_your_finger('right')
 
 		CustomButton:
+			id: _resume
+			text: "Resume"
+			pos_hint: {'x':0.72, 'y':0.1} if root.ids.cw.dir == 1 else {'x': 0.03, 'y':0.1}
+			disabled: False 
+			on_press: 
+				root.ids._more_right.disabled = False
+				root.ids._more_left.disabled = False
+				#root.manager.current = "param_screen_two"
+
+		CustomButton:
+			id: _backward
 			text: "Back"
 			pos_hint: {'x':0.72, 'y':0.1} if root.ids.cw.dir == 1 else {'x': 0.03, 'y':0.1}
+			disabled: False 
 			on_press: 
 				root.manager.current = "param_screen_two"
+
 
         ColorScreen:
             id: cw
@@ -359,7 +376,7 @@
             pos: (root.x + cm(self.topspace/2.0), root.center_y - math.sin(math.radians(self.theta)) * cm(self.diag) + math.sin(math.radians(90 - self.theta)) * cm(self.mprad/10.0))
 
             # Initial tilt
-            degree: -1 * self.dir * 25 
+            degree: self.dir * 15 
 
             # <dir> will be given by the choice of left or right
             # 1: Right / -1: Left
