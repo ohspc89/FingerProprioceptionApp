@@ -125,10 +125,12 @@ class TestScreen(Screen):
         self.rev_count = 0
         # checking if the reverse is happening
         self.prev_choice = list()
-        # check the trial number
-        self.trial_num = 0
         # session number
         self.session_num = 0
+        # check the trial number(within a session)
+        self.trial_num = 0
+        # Keep the record of total trials(regardless of session)
+        self.trial_total = 0
 
 
     # changes the color of the buttons as well as the screen
@@ -203,9 +205,10 @@ class TestScreen(Screen):
             else:
                 self.ids.cw.degree = temp
 
-        store.put("_".join(["TRIAL", str(self.trial_num)]), session = self.session_num, rev_cnt = self.rev_count, choice = self.prev_choice[-1], deg = degree_current, step_size = self.delta_d, correct_x = self.ids.cw.x_correct, x_coord_current = x_coord_current, correct_ans = correct_ans, response_correct = rel_pos == correct_ans)
+        store.put("_".join(["TRIAL", str(self.trial_total)]), session = self.session_num, trial_in_session = self.trial_num, rev_cnt = self.rev_count, deg = degree_current, step_size = self.delta_d, correct_x = self.ids.cw.x_correct, x_coord_current = x_coord_current, correct_ans = correct_ans, response = self.prev_choice[-1], response_correct = rel_pos == correct_ans)
 
         self.trial_num += 1
+        self.trial_total += 1
 
 
         # Print the trial number and the deviation angle(deg)
@@ -214,24 +217,29 @@ class TestScreen(Screen):
         # - the line that connects the MP joint and the upper right point of the quadrilateral
         # print(self.trial_num, self.ids.cw.degree)
 
-        # Switch screen if a participant has reached 20 trials or reversed 5 times
         if self.trial_num == 20 or self.rev_count == 5:
-            if self.session_num == 1:
-                self.parent.current = "outcome_screen"
-            else:
+            if self.session_num == 0:
+
                 # A new session begins
-                self.session_num = 1
+                self.session_num +=1
+                
                 # Count the reverse from the beginning
                 self.rev_count = 0
+
+                # Trial number renewed
+                self.trial_num = 0
+
                 # New display setting
                 self.ids.cw.degree = -1 * self.ids.cw.dir * 55
+
                 # There's no turning back
                 self.ids.layout.remove_widget(self.ids._backward)
+
                 # The buttons would be disabled until an experimenter presses the 'resume' button
                 self.ids._more_left.disabled = True
                 self.ids._more_right.disabled = True
-            
-        #if self.trial_num == 40 or self.rev_count == 10:
+            else:
+                self.parent.current = "outcome_screen"
 
 class OutcomeScreen(Screen):
     pass
