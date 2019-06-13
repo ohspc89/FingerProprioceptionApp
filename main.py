@@ -216,19 +216,25 @@ class TestScreen(Screen):
 
         # Switch screen if a participant has reached 20 trials or reversed 5 times
         if self.trial_num == 20 or self.rev_count == 5:
-            # Count the reverse from the beginning
-            self.rev_count = 0
-            # A new session starts
-            self.session_num += 1
-            # New display setting
-            self.ids.cw.degree = -1 * self.ids.cw.dir * 55
-            # There's no turning back
-            self.ids.layout.remove_widget(self.ids._backward)
-            # The buttons would be disabled until an experimenter presses the 'resume' button
-            self.ids._more_left.disabled = True
-            self.ids._more_right.disabled = True
+            if self.trial_num >= 20:
+                self.parent.current = "outcome_screen"
+            else:
+                # Count the reverse from the beginning
+                self.rev_count = 0
+                # A new session starts
+                self.session_num += 1
+                # New display setting
+                self.ids.cw.degree = -1 * self.ids.cw.dir * 55
+                # There's no turning back
+                self.ids.layout.remove_widget(self.ids._backward)
+                # The buttons would be disabled until an experimenter presses the 'resume' button
+                self.ids._more_left.disabled = True
+                self.ids._more_right.disabled = True
             
         #if self.trial_num == 40 or self.rev_count == 10:
+
+class OutcomeScreen(Screen):
+    pass
 
 class screen_manager(ScreenManager):
     pass

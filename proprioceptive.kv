@@ -393,6 +393,11 @@
         CustomCircle:
             pos: (root.center_x + root.ids.cw.dir*math.cos(math.radians(root.ids.cw.theta)) * cm(root.ids.cw.diag) + root.ids.cw.dir * cm(root.ids.cw.mprad/10.0) * math.cos(math.radians(90 - root.ids.cw.theta)) - cm(0.25), root.center_y - math.sin(math.radians(root.ids.cw.theta)) * cm(root.ids.cw.diag) + math.sin(math.radians(90 - root.ids.cw.theta)) * cm(root.ids.cw.mprad/10.0) - cm(0.25))
 
+<OutcomeScreen>:
+    FloatLayout:
+		Label:
+			color: 0.8, 0.8, 0.8, 1
+			text: "See You Later!"
 
 <screen_manager>:
     CalibrationScreen:
@@ -407,3 +412,6 @@
     TestScreen:
         id: testsc
         name: "test_screen"
+	OutcomeScreen:
+		id: outsc
+		name: "outcome_screen"
