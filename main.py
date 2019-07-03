@@ -1,12 +1,14 @@
 import math
 from random import randrange
 from kivy.uix.screenmanager import Screen, ScreenManager, FadeTransition
+from kivy.core.window import Window
 from kivy.app import App
-from kivy.properties import ObjectProperty, StringProperty
+from kivy.config import Config
+from kivy.properties import ObjectProperty
 from kivy.uix.popup import Popup
 from kivy.uix.floatlayout import FloatLayout
 from kivy.storage.jsonstore import JsonStore
-import os, time
+import time
 from kivy import platform
 
 timestamp = time.strftime("%Y%m%d_%H:%M:%S")
@@ -215,7 +217,7 @@ class TestScreen(Screen):
         # The value of the deviation angle is the angle between
         # - the vertical line that passes the MP joint
         # - the line that connects the MP joint and the upper right point of the quadrilateral
-        # print(self.trial_num, self.ids.cw.degree)
+        print(self.trial_num, self.rev_count, self.session_num, self.delta_d)
 
         if self.trial_num == 20 or self.rev_count == 5:
             if self.session_num == 0:
@@ -226,11 +228,14 @@ class TestScreen(Screen):
                 # Count the reverse from the beginning
                 self.rev_count = 0
 
+                # Renew the list of stored choices
+                self.prev_choice = list()
+
                 # Trial number renewed
                 self.trial_num = 0
 
                 # New display setting
-                self.ids.cw.degree = -1 * self.ids.cw.dir * 55
+                self.ids.cw.degree = -1 * self.ids.cw.dir * 50
 
                 # There's no turning back
                 self.ids.layout.remove_widget(self.ids._backward)
@@ -253,4 +258,8 @@ class ProprioceptiveApp(App):
         return screen_manager(transition=FadeTransition())
 
 if __name__ == '__main__':
+
+    Config.set('graphics', 'fullscreen', 'auto')
+    Config.set('graphics', 'window_state', 'maximized')
+    Config.write()
     ProprioceptiveApp().run()

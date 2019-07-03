@@ -150,6 +150,7 @@
 
                 PTextInput:
                     id: pid
+					on_text_validate: age.focus = True
 
             RelativeLayout:
 
@@ -269,6 +270,7 @@
                 PTextInput:
                     id: initd
                     pos_hint:{'center_x': 0.7, 'center_y':0.5}
+					on_text_validate: fwid.focus = True
 
             RelativeLayout:
 
@@ -279,6 +281,7 @@
                 PTextInput:
                     id: fwid
                     pos_hint:{'center_x': 0.7, 'center_y':0.5}
+					on_text_validate: flen.focus = True
 
             RelativeLayout:
 
@@ -289,6 +292,7 @@
                 PTextInput:
                     id: flen
                     pos_hint:{'center_x': 0.7, 'center_y':0.5}
+					on_text_validate: mprad.focus = True
 
             RelativeLayout:
 
@@ -395,10 +399,11 @@
 
 <OutcomeScreen>:
     FloatLayout:
-		Label:
+		Button:
 			color: 0.8, 0.8, 0.8, 1
 			text: "See You Later!"
 			font_size: 50
+			on_press: app.stop()
 
 <screen_manager>:
     CalibrationScreen:
