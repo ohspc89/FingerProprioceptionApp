@@ -1,0 +1,429 @@
+#:import math math
+
+# Intersecting gridlines for calibration
+<GridLines@Widget>:
+    # vertical line
+    canvas.before:
+        Color:
+            rgba: 1, 1, 1, 1
+        Rectangle:
+            pos: self.x, self.y
+            size: self.right, self.top
+        Color:
+            rgba: 0, 0, 0, 1
+        Line:
+            points: self.center_x, self.y, self.center_x, self.top
+            width: 2.
+    # horizontal line
+    canvas.after:
+        Color:
+            rgba: 0, 0, 0, 1
+        Line:
+            points: self.x, self.center_y, self.right, self.center_y
+            width: 2.
+
+# Button size is proportional to the screen size
+<CustomButton@Button>
+    size_hint: 0.25, 0.1 
+    spacing: 10
+
+<CustomCircle@Widget>
+    canvas:
+        Color:
+            rgba: 0.5, 0.5, 1, 1
+        Ellipse:
+            pos: root.x, root.y
+            size: cm(0.5), cm(0.5)
+
+<ColorScreen@Widget>
+    # Initial screen color on the right: Blue 
+    bg_color_before: 0, 0, 1, 1
+    canvas.before:
+        Color:
+            rgba: self.bg_color_before
+        Rectangle:
+            pos: self.x, self.y 
+            size: self.width, self.height
+    # Initial screen color on the left: Red
+    bg_color_after: 1, 0, 0, 1
+
+    # parameters(will be overridden later)
+    dir: 1 
+    #flen: 6
+    degree: 12
+	degree_dir: -1
+    mprad: 5
+	false_ref: 55
+
+	# device angle
+	theta: 50
+
+	# diagonal distance
+	diag: 3
+
+    # The quadrilateral is overlayed
+    canvas.after:
+        Color:
+            rgba: self.bg_color_after
+        Quad:
+            points: [self.x, self.y, self.x, self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)) - self.dir * self.height*math.tan(math.radians(90 - (self.false_ref + self.degree_dir * self.degree))), self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)), self.y]
+
+<CalibrationScreen>:
+    FloatLayout:
+        GridLines:
+            on_touch_down:
+				root.show_popup()
+                #root.manager.current = "param_screen_one"
+
+<CalibPopup>:
+    Button:
+		id: cpopup 
+		background_normal: ""
+		background_color: 1, 1, 1, 1
+		size_hint: 0.6, 0.5
+		pos_hint: {"x": 0.2, "y": 0.25}
+		text: "Touch HERE\n(If Calibration is COMPLETE)\n \nTouch OUTSIDE THIS WINDOW\n(Otherwise)"
+		color: 1, 0, 0, 1
+		font_size: 25
+		halign:"center"
+        on_press: 
+			app.root.current = "param_screen_one"
+			root.dismiss()
+
+<ParamPopup>:
+	argh: ppopup
+	Button:
+		id: ppopup
+		background_normal: ""
+		background_color: 1, 1, 1, 1
+		text: "INPUT SAVED!"
+		color: 0, 0, 1, 1
+		font_size: 25
+		haligh: "center"
+		size_hint: 0.6, 0.5
+		pos_hint: {"x":0.2, "y": 0.25}
+		on_press:
+			root.dismiss()
+		
+# 3 items repeatedly used in the two parameter input screens
+
+<PTextInput@TextInput>:
+	font_size: 20
+	multiline: False 
+	size_hint: (0.2, 0.2)
+	pos_hint:{'center_x': 0.55, 'center_y':0.5}
+	focus: True
+	
+<PLabel@Label>:
+	color: 0, 0, 0, 1
+	font_size: 20
+	pos_hint:{'center_x':0.2, 'center_y':0.5}
+
+<PButton@Button>:
+	color: 1, 1, 1, 1
+	font_size: 20
+	size_hint: (.2, .25)
+
+
+<ParamInputScreenOne>:
+    pid_text_input: pid 
+    age_text_input: age
+    BoxLayout:
+        orientation: "horizontal"
+
+        canvas:
+            Color:
+                rgba: 1, 1, 1, 0.95
+            Rectangle: 
+                size: self.right, self.top
+
+        Image:
+            source: "HSCL.jpg"
+            size: 400, 400 
+            pos: 20, 20 
+
+        BoxLayout:
+            orientation: "vertical"
+
+            RelativeLayout:
+
+                PLabel:
+                    text: "Participant ID"
+
+                PTextInput:
+                    id: pid
+					on_text_validate: age.focus = True
+
+            RelativeLayout:
+
+                PLabel:
+                    text: "Age"
+
+                PTextInput:
+                    id: age
+
+            RelativeLayout:
+
+                PLabel:
+                    text: "Gender"
+
+                CheckBox:
+                    id: malechk
+                    color: 0, 0, 0, 1
+                    group: "Gender"
+                    value: root.male
+                    pos_hint: {'center_x':.4}
+                    size_hint_x: 0.1
+                    on_active: root.if_active_m(self.active)
+
+                PLabel:
+                    text: "Male"
+                    pos_hint: {'center_x':.5}
+
+                CheckBox:
+                    id: femalechk
+                    color: 0, 0, 0, 1
+                    group: "Gender"
+                    value: root.female
+                    pos_hint: {'center_x':.6}
+                    size_hint_x: 0.1
+                    on_active: root.if_active_f(self.active)
+
+                PLabel:
+                    text: "Female"
+                    pos_hint: {'center_x':.7}
+
+            RelativeLayout:
+
+                PLabel:
+                    text: "Dominant hand"
+                    pos_hint: {'center_x':0.2}
+
+                CheckBox:
+                    id: leftchk
+                    color: 0, 0, 0, 1
+                    group: "dominant_hand"
+                    value: root.left
+                    pos_hint: {'center_x':.4}
+                    size_hint_x: 0.1
+                    on_active: root.if_active_l(self.active)
+
+                PLabel:
+                    text: "Left"
+                    pos_hint: {'center_x':.5}
+
+                CheckBox:
+                    id: rightchk
+                    color: 0, 0, 0, 1
+                    group: "dominant_hand"
+                    value: root.right
+                    pos_hint: {'center_x':.6}
+                    size_hint_x: 0.1
+                    on_active: root.if_active_r(self.active)
+
+                PLabel:
+                    text: "Right"
+                    pos_hint: {'center_x':.7}
+
+            RelativeLayout:
+
+                PButton:
+                    text: "Back"
+                    pos_hint: {'center_x':0.3, 'center_y':0.4}
+                    on_press: 
+                        root.manager.current = "calib_screen"
+
+                PButton:
+                    id: next1
+                    text: "Next"
+                    pos_hint: {'center_x':0.6, 'center_y':0.4}
+                    on_press: 
+                        root.show_popup()
+
+
+<ParamInputScreenTwo>:
+    flen_text_input: flen
+    fwid_text_input: fwid
+    initd_text_input: initd
+    mprad_text_input: mprad
+    BoxLayout:
+        orientation: "horizontal"
+
+        canvas:
+            Color:
+                rgba: 1, 1, 1, 0.95
+            Rectangle:
+                size: self.right, self.top
+        
+        Image:
+            source: "hand_image.png"
+            size: 400, 600
+            pos: 20, 20
+
+        BoxLayout:
+            orientation: "vertical"
+
+            RelativeLayout:
+
+                PLabel:
+                    text: "Initial Step Size(deg)"
+                    pos_hint:{'center_x':0.3, 'center_y':0.5}
+
+                PTextInput:
+                    id: initd
+                    pos_hint:{'center_x': 0.7, 'center_y':0.5}
+					on_text_validate: fwid.focus = True
+
+            RelativeLayout:
+
+                PLabel:
+                    text: "[1] Finger width(mm)"
+                    pos_hint:{'center_x':0.3, 'center_y':0.5}
+
+                PTextInput:
+                    id: fwid
+                    pos_hint:{'center_x': 0.7, 'center_y':0.5}
+					on_text_validate: flen.focus = True
+
+            RelativeLayout:
+
+                PLabel:
+                    text: "[2] Finger length(mm)"
+                    pos_hint:{'center_x':0.3, 'center_y':0.5}
+
+                PTextInput:
+                    id: flen
+                    pos_hint:{'center_x': 0.7, 'center_y':0.5}
+					on_text_validate: mprad.focus = True
+
+            RelativeLayout:
+
+                PLabel:
+                    color: 0, 0, 0, 1
+                    text: "[3] MP Joint Radius(mm)"
+                    pos_hint:{'center_x':0.3, 'center_y':0.5}
+
+                PTextInput:
+                    id: mprad 
+                    pos_hint:{'center_x': 0.7, 'center_y':0.5}
+
+            RelativeLayout:
+
+                PButton:
+                    text: "Back"
+                    pos_hint: {'center_x':0.3, 'center_y':0.4}
+                    on_press: 
+                        root.manager.current = "param_screen_one"
+
+
+                PButton:
+                    text: "Next"
+                    pos_hint: {'center_x':0.6, 'center_y':0.4}
+                    on_press: 
+                        root.show_popup2()
+
+# The actual color screen
+<TestScreen>:
+
+    handedness: cw
+	backbutton: _backward
+
+    FloatLayout:
+		id: layout
+        CustomButton:
+            id: _more_left 
+            background_color: 1, 0, 0, 1
+            background_normal: ""
+            # move the button to the right if your dominant hand is left 
+            pos_hint: {'x':0.03, 'y': 0.1} if root.ids.cw.dir == 1 else {'x': 0.445, 'y':0.1} 
+			disabled: False
+            on_press: root.where_is_your_finger('left')
+
+        CustomButton:
+            id: _more_right
+            background_color: 0, 0, 1, 1
+            background_normal: ""
+            # Button positions may need more discussion
+            pos_hint: {'x':0.305, 'y':0.1} if root.ids.cw.dir == 1 else {'x':0.72, 'y':0.1}
+			disabled: False
+            on_press: root.where_is_your_finger('right')
+
+		CustomButton:
+			id: _resume
+			text: "Resume"
+			pos_hint: {'x':0.72, 'y':0.1} if root.ids.cw.dir == 1 else {'x': 0.03, 'y':0.1}
+			disabled: False 
+			on_press: 
+				root.ids._more_right.disabled = False
+				root.ids._more_left.disabled = False
+				#root.manager.current = "param_screen_two"
+
+		CustomButton:
+			id: _backward
+			text: "Back"
+			pos_hint: {'x':0.72, 'y':0.1} if root.ids.cw.dir == 1 else {'x': 0.03, 'y':0.1}
+			disabled: False 
+			on_press: 
+				root.manager.current = "param_screen_two"
+
+
+        ColorScreen:
+            id: cw
+            # have the colorscreen be centered!!
+            size_hint: (None, None)
+
+            # Leave 1cm from the top 
+			topspace: 1.0
+
+            # height: from MP joint to the 1 cm below the top of the display
+            size: root.width - cm(self.topspace), root.height - root.center_y + math.sin(math.radians(self.theta)) * cm(self.diag) - math.sin(math.radians(90 - self.theta)) * cm(self.mprad/10.0) - cm(self.topspace)
+
+            # This bottom left corner position
+            pos: (root.x + cm(self.topspace/2.0), root.center_y - math.sin(math.radians(self.theta)) * cm(self.diag) + math.sin(math.radians(90 - self.theta)) * cm(self.mprad/10.0))
+
+            # Initial tilt
+            degree: float(root.mov_angle)
+			
+            # <dir> will be given by the choice of left or right
+            # 1: Right / -1: Left
+
+            # This is used to update the position of the moving point
+            quad_points : [self.x, self.y, self.x, self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)) - self.dir * self.height*math.tan(math.radians(90 - (self.false_ref + self.degree_dir * self.degree))), self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)), self.y]        
+			x_correct: self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)) - self.dir * self.height * math.tan(math.radians(90 - self.theta)) 
+
+        # Display center
+
+		Label:
+			pos: (root.x, root.y)
+			text: str(root.ids.cw.degree)
+			font_size: 20
+
+        # MP point
+        CustomCircle:
+            pos: (root.center_x + root.ids.cw.dir*math.cos(math.radians(root.ids.cw.theta)) * cm(root.ids.cw.diag) + root.ids.cw.dir * cm(root.ids.cw.mprad/10.0) * math.cos(math.radians(90 - root.ids.cw.theta)) - cm(0.25), root.center_y - math.sin(math.radians(root.ids.cw.theta)) * cm(root.ids.cw.diag) + math.sin(math.radians(90 - root.ids.cw.theta)) * cm(root.ids.cw.mprad/10.0) - cm(0.25))
+
+<OutcomeScreen>:
+    FloatLayout:
+		Button:
+			color: 0.8, 0.8, 0.8, 1
+			text: "See You Later!"
+			font_size: 50
+			on_press:
+				root.start_a_new_subject()
+
+<screen_manager>:
+    CalibrationScreen:
+        id: calibsc
+        name: "calib_screen"
+    ParamInputScreenOne:
+        id: paramscone
+        name: "param_screen_one"
+    ParamInputScreenTwo:
+        id: paramsc
+        name: "param_screen_two"
+    TestScreen:
+        id: testsc
+        name: "test_screen"
+	OutcomeScreen:
+		id: outsc
+		name: "outcome_screen"
