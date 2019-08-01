@@ -225,7 +225,7 @@ class TestScreen(Screen):
                 self.ids.cw.degree = float(Psi.xCurrent)
 
         #global subj_trial_info
-        subj_trial_info["_".join(["TRIAL", str(self.trial_total)])] = {'session': self.session_num, 'trial_in_session': self.trial_num, 'deg': degree_current, 'correct_x': self.ids.cw.x_correct, 'x_coord_current': x_coord_current, 'correct_ans': correct_ans, 'response': self.prev_choice[-1], 'response_correct': right_or_wrong}
+        subj_trial_info["_".join(["TRIAL", str(self.trial_total)])] = {'session': self.session_num, 'trial_in_session': self.trial_num, 'reference(deg)': self.ids.cw.false_ref, 'offset(deg)': degree_current, 'correct_x': self.ids.cw.x_correct, 'x_coord_current': x_coord_current, 'correct_ans': correct_ans, 'response': self.prev_choice[-1], 'response_correct': right_or_wrong}
 
         self.trial_num += 1
         self.trial_total += 1
