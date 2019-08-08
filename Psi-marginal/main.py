@@ -11,6 +11,8 @@ from kivy.storage.jsonstore import JsonStore
 from kivy import platform
 import threading
 
+Window.fullscreen = 'auto'
+
 def cartesian(arrays, out=None):
     """Generate a cartesian product of input arrays.
 
