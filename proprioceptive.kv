@@ -35,6 +35,38 @@
             pos: root.x, root.y
             size: cm(0.5), cm(0.5)
 
+<ColorScreenAS@Widget> 
+    # Initial screen color on the right: Blue 
+    bg_color_before: 0, 0, 1, 1
+    canvas.before:
+        Color:
+            rgba: self.bg_color_before
+        Rectangle:
+            pos: self.x, self.y 
+            size: self.width, self.height
+    # Initial screen color on the left: Red
+    bg_color_after: 1, 0, 0, 1
+
+    # parameters(will be overridden later)
+    dir: 1 
+	## degree in ColorScreenAS is different from the equivalent in ColorScreenPM!
+    degree: 25 
+    mprad: 5
+
+	# device angle
+	theta: 50
+
+	# diagonal distance
+	diag: 3
+
+    # The quadrilateral is overlayed
+    canvas.after:
+        Color:
+            rgba: self.bg_color_after
+        Quad:
+            points: [self.x, self.y, self.x, self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)) + self.height*math.tan(math.radians(self.degree)), self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)), self.y]
+
+
 <ColorScreen@Widget>
     # Initial screen color on the right: Blue 
     bg_color_before: 0, 0, 1, 1
@@ -49,12 +81,15 @@
 
     # parameters(will be overridden later)
     dir: 1 
-    #flen: 6
-    degree: 25
+	# psi_obj.xCurrent(Psi-Marginal stimulus) - can think of this as the step size
+    degree: 15
+	# Psi stimulus is either added or subtracted from the false reference
+	degree_dir: -1
     mprad: 5
+	false_ref: 55
 
 	# device angle
-	theta: 55
+	theta: 50
 
 	# diagonal distance
 	diag: 3
@@ -64,7 +99,7 @@
         Color:
             rgba: self.bg_color_after
         Quad:
-            points: [self.x, self.y, self.x, self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)) + self.height*math.tan(math.radians(self.degree)), self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)), self.y]
+            points: [self.x, self.y, self.x, self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)) - self.dir * self.height*math.tan(math.radians(90 - (self.false_ref + self.degree_dir * self.degree))), self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)), self.y]
 
 <CalibrationScreen>:
     FloatLayout:
@@ -126,19 +161,57 @@
 <ParamInputScreenOne>:
     pid_text_input: pid 
     age_text_input: age
+	male_chkbox: malechk
+	female_chkbox: femalechk
+	left_chkbox: leftchk
+	right_chkbox: rightchk
+	psi_chkbox: pm_chk
+	adapst_chkbox: as_chk
+
     BoxLayout:
         orientation: "horizontal"
 
-        canvas:
-            Color:
-                rgba: 1, 1, 1, 0.95
-            Rectangle: 
-                size: self.right, self.top
+		canvas:
+			Color:
+				rgba: 1, 1, 1, 0.95
+			Rectangle: 
+				size: self.right, self.top
 
-        Image:
-            source: "HSCL.jpg"
-            size: 400, 400 
-            pos: 20, 20 
+		BoxLayout:
+			orientation: "vertical"
+
+			RelativeLayout:
+
+				Image:
+					source: "HSCL.jpg"
+					size: 400, 400 
+					pos_hint: {'center_x':0.5, 'center_y': 0}
+
+			RelativeLayout:
+
+				PLabel:
+					text: "Psi-marginal"
+					pos_hint: {'center_x': 0.2, 'center_y': 0.5}
+
+				CheckBox:
+					id: pm_chk
+					color: 0, 0, 0, 1
+					group: "staircase"
+					pos_hint: {'center_x':.4, 'center_y': 0.5}
+					size_hint_x: 0.1
+					on_active: root.Psimarginal_Yes(self.active)
+
+				PLabel:
+					text: "Adaptive-Staircase"
+					pos_hint: {'center_x': 0.6, 'center_y': 0.5}
+
+				CheckBox:
+					id: as_chk
+					color: 0, 0, 0, 1
+					group: "staircase"
+					pos_hint: {'center_x':.8, 'center_y': .5}
+					size_hint_x: .1
+					on_active: root.Adaptive_Yes(self.active)
 
         BoxLayout:
             orientation: "vertical"
@@ -169,7 +242,7 @@
                     id: malechk
                     color: 0, 0, 0, 1
                     group: "Gender"
-                    value: root.male
+                    #value: root.male
                     pos_hint: {'center_x':.4}
                     size_hint_x: 0.1
                     on_active: root.if_active_m(self.active)
@@ -182,7 +255,7 @@
                     id: femalechk
                     color: 0, 0, 0, 1
                     group: "Gender"
-                    value: root.female
+                    #value: root.female
                     pos_hint: {'center_x':.6}
                     size_hint_x: 0.1
                     on_active: root.if_active_f(self.active)
@@ -201,7 +274,7 @@
                     id: leftchk
                     color: 0, 0, 0, 1
                     group: "dominant_hand"
-                    value: root.left
+                    #value: root.left
                     pos_hint: {'center_x':.4}
                     size_hint_x: 0.1
                     on_active: root.if_active_l(self.active)
@@ -214,7 +287,7 @@
                     id: rightchk
                     color: 0, 0, 0, 1
                     group: "dominant_hand"
-                    value: root.right
+                    #value: root.right
                     pos_hint: {'center_x':.6}
                     size_hint_x: 0.1
                     on_active: root.if_active_r(self.active)
@@ -239,7 +312,7 @@
                         root.show_popup()
 
 
-<ParamInputScreenTwo>:
+<ParamInputScreenTwo>: 
     flen_text_input: flen
     fwid_text_input: fwid
     initd_text_input: initd
@@ -320,8 +393,8 @@
                     on_press: 
                         root.show_popup2()
 
-# The actual color screen
-<TestScreen>:
+# The actual color screen when Psi-Marginal is checked
+<TestScreenPM>:
 
     handedness: cw
 	backbutton: _backward
@@ -354,7 +427,6 @@
 			on_press: 
 				root.ids._more_right.disabled = False
 				root.ids._more_left.disabled = False
-				#root.manager.current = "param_screen_two"
 
 		CustomButton:
 			id: _backward
@@ -380,8 +452,79 @@
             pos: (root.x + cm(self.topspace/2.0), root.center_y - math.sin(math.radians(self.theta)) * cm(self.diag) + math.sin(math.radians(90 - self.theta)) * cm(self.mprad/10.0))
 
             # Initial tilt
-            degree: self.dir * 15 
+            degree: float(root.delta_d)
+			
+            # <dir> will be given by the choice of left or right
+            # 1: Right / -1: Left
 
+            # This is used to update the position of the moving point
+            quad_points : [self.x, self.y, self.x, self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)) - self.dir * self.height*math.tan(math.radians(90 - (self.false_ref + self.degree_dir * self.degree))), self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)), self.y]        
+			x_correct: self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)) - self.dir * self.height * math.tan(math.radians(90 - self.theta)) 
+
+        # MP point
+        CustomCircle:
+            pos: (root.center_x + root.ids.cw.dir*math.cos(math.radians(root.ids.cw.theta)) * cm(root.ids.cw.diag) + root.ids.cw.dir * cm(root.ids.cw.mprad/10.0) * math.cos(math.radians(90 - root.ids.cw.theta)) - cm(0.25), root.center_y - math.sin(math.radians(root.ids.cw.theta)) * cm(root.ids.cw.diag) + math.sin(math.radians(90 - root.ids.cw.theta)) * cm(root.ids.cw.mprad/10.0) - cm(0.25))
+
+# It's almost the same as TestScreenPM... don't know how to make it elegant so just copying it and modifying....
+<TestScreenAS>:
+
+    handedness: cw
+	backbutton: _backward
+
+    FloatLayout:
+		id: layout
+        CustomButton:
+            id: _more_left
+            background_color: 1, 0, 0, 1
+            background_normal: ""
+            # move the button to the right if your dominant hand is left 
+            pos_hint: {'x':0.03, 'y': 0.1} if root.ids.cw.dir == 1 else {'x': 0.445, 'y':0.1} 
+			disabled: False
+            on_press: root.where_is_your_finger('left')
+
+        CustomButton:
+            id: _more_right
+            background_color: 0, 0, 1, 1
+            background_normal: ""
+            # Button positions may need more discussion
+            pos_hint: {'x':0.305, 'y':0.1} if root.ids.cw.dir == 1 else {'x':0.72, 'y':0.1}
+			disabled: False
+            on_press: root.where_is_your_finger('right')
+
+		CustomButton:
+			id: _resume
+			text: "Resume"
+			pos_hint: {'x':0.72, 'y':0.1} if root.ids.cw.dir == 1 else {'x': 0.03, 'y':0.1}
+			disabled: False 
+			on_press: 
+				root.ids._more_right.disabled = False
+				root.ids._more_left.disabled = False
+
+		CustomButton:
+			id: _backward
+			text: "Back"
+			pos_hint: {'x':0.72, 'y':0.1} if root.ids.cw.dir == 1 else {'x': 0.03, 'y':0.1}
+			disabled: False 
+			on_press: 
+				root.manager.current = "param_screen_two"
+
+        ColorScreenAS:
+            id: cw
+            # have the colorscreen be centered!!
+            size_hint: (None, None)
+
+            # Leave 1cm from the top 
+			topspace: 1.0
+
+            # height: from MP joint to the 1 cm below the top of the display
+            size: root.width - cm(self.topspace), root.height - root.center_y + math.sin(math.radians(self.theta)) * cm(self.diag) - math.sin(math.radians(90 - self.theta)) * cm(self.mprad/10.0) - cm(self.topspace)
+
+            # This bottom left corner position
+            pos: (root.x + cm(self.topspace/2.0), root.center_y - math.sin(math.radians(self.theta)) * cm(self.diag) + math.sin(math.radians(90 - self.theta)) * cm(self.mprad/10.0))
+
+            # Initial tilt
+            degree: self.dir * 15
+			
             # <dir> will be given by the choice of left or right
             # 1: Right / -1: Left
 
@@ -389,13 +532,11 @@
             quad_points : [self.x, self.y, self.x, self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)) + self.height*math.tan(math.radians(self.degree)), self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)), self.y]        
 			x_correct: self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)) - self.dir * self.height * math.tan(math.radians(90 - self.theta)) 
 
-        # Display center
-        CustomCircle:
-            pos: (root.center_x - cm(0.25), root.center_y - cm(0.25))
-
         # MP point
         CustomCircle:
             pos: (root.center_x + root.ids.cw.dir*math.cos(math.radians(root.ids.cw.theta)) * cm(root.ids.cw.diag) + root.ids.cw.dir * cm(root.ids.cw.mprad/10.0) * math.cos(math.radians(90 - root.ids.cw.theta)) - cm(0.25), root.center_y - math.sin(math.radians(root.ids.cw.theta)) * cm(root.ids.cw.diag) + math.sin(math.radians(90 - root.ids.cw.theta)) * cm(root.ids.cw.mprad/10.0) - cm(0.25))
+
+
 
 <OutcomeScreen>:
     FloatLayout:
@@ -403,7 +544,8 @@
 			color: 0.8, 0.8, 0.8, 1
 			text: "See You Later!"
 			font_size: 50
-			on_press: app.stop()
+			on_press:
+				root.start_a_new_subject()
 
 <screen_manager>:
     CalibrationScreen:
@@ -415,9 +557,12 @@
     ParamInputScreenTwo:
         id: paramsc
         name: "param_screen_two"
-    TestScreen:
-        id: testsc
-        name: "test_screen"
+    TestScreenPM:
+        id: testsc_pm
+        name: "test_screen_PM"
+	TestScreenAS:
+		id: testsc_as
+		name: "test_screen_AS"
 	OutcomeScreen:
 		id: outsc
 		name: "outcome_screen"
