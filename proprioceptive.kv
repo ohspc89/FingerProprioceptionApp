@@ -64,7 +64,7 @@
         Color:
             rgba: self.bg_color_after
         Quad:
-            points: [self.x, self.y, self.x, self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)) + self.height*math.tan(math.radians(self.degree)), self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)), self.y]
+            points: [self.x, self.y, self.x, self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0 + 0.25) * math.cos(math.radians(90 - self.theta)) + self.height*math.tan(math.radians(self.degree)), self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0 + 0.25) * math.cos(math.radians(90 - self.theta)), self.y]
 
 
 <ColorScreen@Widget>
@@ -99,7 +99,7 @@
         Color:
             rgba: self.bg_color_after
         Quad:
-            points: [self.x, self.y, self.x, self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)) - self.dir * self.height*math.tan(math.radians(90 - (self.false_ref + self.degree_dir * self.degree))), self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)), self.y]
+            points: [self.x, self.y, self.x, self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0 + 0.25) * math.cos(math.radians(90 - self.theta)) - self.dir * self.height*math.tan(math.radians(90 - (self.false_ref + self.degree_dir * self.degree))), self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0 + 0.25) * math.cos(math.radians(90 - self.theta)), self.y]
 
 <CalibrationScreen>:
     FloatLayout:
@@ -191,7 +191,7 @@
 
 				PLabel:
 					text: "Psi-marginal"
-					pos_hint: {'center_x': 0.2, 'center_y': 0.5}
+					pos_hint: {'center_x': 0.25, 'center_y': 0.5}
 
 				CheckBox:
 					id: pm_chk
@@ -446,10 +446,10 @@
 			topspace: 1.0
 
             # height: from MP joint to the 1 cm below the top of the display
-            size: root.width - cm(self.topspace), root.height - root.center_y + math.sin(math.radians(self.theta)) * cm(self.diag) - math.sin(math.radians(90 - self.theta)) * cm(self.mprad/10.0) - cm(self.topspace)
+            size: root.width - cm(self.topspace), root.height - root.center_y + math.sin(math.radians(self.theta)) * cm(self.diag) - math.sin(math.radians(90 - self.theta)) * cm(self.mprad/10.0 + 0.25) - cm(self.topspace)
 
             # This bottom left corner position
-            pos: (root.x + cm(self.topspace/2.0), root.center_y - math.sin(math.radians(self.theta)) * cm(self.diag) + math.sin(math.radians(90 - self.theta)) * cm(self.mprad/10.0))
+            pos: (root.x + cm(self.topspace/2.0), root.center_y - math.sin(math.radians(self.theta)) * cm(self.diag) + math.sin(math.radians(90 - self.theta)) * cm(self.mprad/10.0 + 0.25))
 
             # Initial tilt
             degree: float(root.delta_d)
@@ -458,12 +458,12 @@
             # 1: Right / -1: Left
 
             # This is used to update the position of the moving point
-            quad_points : [self.x, self.y, self.x, self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)) - self.dir * self.height*math.tan(math.radians(90 - (self.false_ref + self.degree_dir * self.degree))), self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)), self.y]        
-			x_correct: self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)) - self.dir * self.height * math.tan(math.radians(90 - self.theta)) 
+            quad_points : [self.x, self.y, self.x, self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0 + 0.25) * math.cos(math.radians(90 - self.theta)) - self.dir * self.height*math.tan(math.radians(90 - (self.false_ref + self.degree_dir * self.degree))), self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0 + 0.25) * math.cos(math.radians(90 - self.theta)), self.y]        
+			x_correct: self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0 + 0.25) * math.cos(math.radians(90 - self.theta)) - self.dir * self.height * math.tan(math.radians(90 - self.theta)) 
 
         # MP point
         CustomCircle:
-            pos: (root.center_x + root.ids.cw.dir*math.cos(math.radians(root.ids.cw.theta)) * cm(root.ids.cw.diag) + root.ids.cw.dir * cm(root.ids.cw.mprad/10.0) * math.cos(math.radians(90 - root.ids.cw.theta)) - cm(0.25), root.center_y - math.sin(math.radians(root.ids.cw.theta)) * cm(root.ids.cw.diag) + math.sin(math.radians(90 - root.ids.cw.theta)) * cm(root.ids.cw.mprad/10.0) - cm(0.25))
+            pos: (root.center_x + root.ids.cw.dir*math.cos(math.radians(root.ids.cw.theta)) * cm(root.ids.cw.diag) + root.ids.cw.dir * cm(root.ids.cw.mprad/10.0 + 0.25) * math.cos(math.radians(90 - root.ids.cw.theta)) - cm(0.25), root.center_y - math.sin(math.radians(root.ids.cw.theta)) * cm(root.ids.cw.diag) + math.sin(math.radians(90 - root.ids.cw.theta)) * cm(root.ids.cw.mprad/10.0 + 0.25) - cm(0.25))
 
 # It's almost the same as TestScreenPM... don't know how to make it elegant so just copying it and modifying....
 <TestScreenAS>:
@@ -517,10 +517,10 @@
 			topspace: 1.0
 
             # height: from MP joint to the 1 cm below the top of the display
-            size: root.width - cm(self.topspace), root.height - root.center_y + math.sin(math.radians(self.theta)) * cm(self.diag) - math.sin(math.radians(90 - self.theta)) * cm(self.mprad/10.0) - cm(self.topspace)
+            size: root.width - cm(self.topspace), root.height - root.center_y + math.sin(math.radians(self.theta)) * cm(self.diag) - math.sin(math.radians(90 - self.theta)) * cm(self.mprad/10.0 + 0.25) - cm(self.topspace)
 
             # This bottom left corner position
-            pos: (root.x + cm(self.topspace/2.0), root.center_y - math.sin(math.radians(self.theta)) * cm(self.diag) + math.sin(math.radians(90 - self.theta)) * cm(self.mprad/10.0))
+            pos: (root.x + cm(self.topspace/2.0), root.center_y - math.sin(math.radians(self.theta)) * cm(self.diag) + math.sin(math.radians(90 - self.theta)) * cm(self.mprad/10.0 + 0.25))
 
             # Initial tilt
             degree: self.dir * 15
@@ -529,12 +529,12 @@
             # 1: Right / -1: Left
 
             # This is used to update the position of the moving point
-            quad_points : [self.x, self.y, self.x, self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)) + self.height*math.tan(math.radians(self.degree)), self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)), self.y]        
-			x_correct: self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0) * math.cos(math.radians(90 - self.theta)) - self.dir * self.height * math.tan(math.radians(90 - self.theta)) 
+            quad_points : [self.x, self.y, self.x, self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0 + 0.25) * math.cos(math.radians(90 - self.theta)) + self.height*math.tan(math.radians(self.degree)), self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0 + 0.25) * math.cos(math.radians(90 - self.theta)), self.y]        
+			x_correct: self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0 + 0.25) * math.cos(math.radians(90 - self.theta)) - self.dir * self.height * math.tan(math.radians(90 - self.theta)) 
 
         # MP point
         CustomCircle:
-            pos: (root.center_x + root.ids.cw.dir*math.cos(math.radians(root.ids.cw.theta)) * cm(root.ids.cw.diag) + root.ids.cw.dir * cm(root.ids.cw.mprad/10.0) * math.cos(math.radians(90 - root.ids.cw.theta)) - cm(0.25), root.center_y - math.sin(math.radians(root.ids.cw.theta)) * cm(root.ids.cw.diag) + math.sin(math.radians(90 - root.ids.cw.theta)) * cm(root.ids.cw.mprad/10.0) - cm(0.25))
+            pos: (root.center_x + root.ids.cw.dir*math.cos(math.radians(root.ids.cw.theta)) * cm(root.ids.cw.diag) + root.ids.cw.dir * cm(root.ids.cw.mprad/10.0 + 0.25) * math.cos(math.radians(90 - root.ids.cw.theta)) - cm(0.25), root.center_y - math.sin(math.radians(root.ids.cw.theta)) * cm(root.ids.cw.diag) + math.sin(math.radians(90 - root.ids.cw.theta)) * cm(root.ids.cw.mprad/10.0 + 0.25) - cm(0.25))
 
 
 
