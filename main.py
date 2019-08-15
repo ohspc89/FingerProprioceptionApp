@@ -4,7 +4,7 @@ from random import randrange
 from kivy.uix.screenmanager import Screen, ScreenManager, FadeTransition
 from kivy.core.window import Window
 from kivy.app import App
-from kivy.properties import ObjectProperty
+from kivy.properties import ObjectProperty, StringProperty
 from kivy.uix.popup import Popup
 from kivy.uix.floatlayout import FloatLayout
 from kivy.storage.jsonstore import JsonStore
@@ -508,9 +508,9 @@ mu = threshold parameter
 sigma = slope parameter
 StimLevels = delta angle
 '''
-ntrials = 32
-mu = np.linspace(0, 30, 201)
-sigma = np.linspace(0.05, 1, 201)
+ntrials = 23
+mu = np.linspace(0, 30, 151)
+sigma = np.linspace(0.05, 1, 151)
 lapse = 0.05
 guessRate = 0.5
 
@@ -547,7 +547,6 @@ class ParamInputScreenOne(Screen):
     # Popup window to check if everything is saved properly
     def show_popup(self):
 
-        print('left?', self.ids.leftchk.active, 'right?', self.ids.rightchk.active, 'pm_dir = ', self.parent.ids.testsc_pm.handedness.dir, 'as_dir = ', self.parent.ids.testsc_as.handedness.dir, 'psi-marginal?', self.staircase)
         the_popup = ParamPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
 
         # Check if any of the parameter inputs is missing!
@@ -650,7 +649,10 @@ class TestScreenAS(Screen):
         self.trial_num = 0
         # Keep the record of total trials(regardless of block)
         self.trial_total = 0
+        # JSON dictionary preparation
         self.subj_trial_info = {}
+        # Trial Average
+        self.stimuli = list()
 
     # changes the color of the buttons as well as the screen
     def change_col_setting(self):
@@ -675,22 +677,12 @@ class TestScreenAS(Screen):
     def update_delta_d(self):
         self.delta_d = float(self.parent.ids.paramsc.initd_text_input.text) / (2.0 ** self.rev_count)
 
-    '''
-    The function [where_is_your_finger] is comprised of two parts
-    The first part of the function will get the current screen information,
-    compare the subject's response to the correct response and store relevant information to a Python dictionary.
-    The second part will compute what parameter values required to update the screen.
-    '''
-    def where_is_your_finger(self, rel_pos):
-
-        ## change the colors of the screen
-        self.change_col_setting()
-
-        ## Add the current choice, check if reversal is happening
-        self.track_rev(rel_pos)
+    def save_trial_data(self, rel_pos):
 
         ## Save the current degree
         degree_current = self.ids.cw.degree
+
+        self.stimuli.append(np.abs(degree_current - 50.0))
 
         '''
         Check if the respons('on the left' or 'on the right') is correct.
@@ -707,39 +699,53 @@ class TestScreenAS(Screen):
             correct_ans = "right"
 
         # Compare if the response is correct
-        right_or_wrong = int(rel_pos == correct_ans)
+        self.right_or_wrong = int(rel_pos == correct_ans)
 
         # Based on the updated reversal count, calculate the delta_d
         self.update_delta_d()
 
-        self.subj_trial_info["_".join(["TRIAL", str(self.trial_total)])] = {'trial_num': self.trial_num, 'block_num': self.block_num, 'rev_cnt': self.rev_count, 'Stimulus(deg)': self.delta_d, 'Visual Stimulus(deg)': 90.0 + degree_current, 'correct_ans': correct_ans, 'response': self.prev_choice[-1], 'response_correct': right_or_wrong}
+        self.subj_trial_info["_".join(["TRIAL", str(self.trial_total)])] = {'trial_num': self.trial_num, 'block_num': self.block_num, 'rev_cnt': self.rev_count, 'Next_Step_size(deg)': self.delta_d, 'Visual Stimulus(deg)': 90.0 + degree_current, 'correct_ans': correct_ans, 'response': self.prev_choice[-1], 'response_correct': self.right_or_wrong}
 
-        # next step deviation angle
-        if rel_pos == 'left':
-            temp = self.ids.cw.degree - self.delta_d
+    def where_is_your_finger(self, rel_pos):
 
-            # Set the left limit
-            if (self.ids.cw.quad_points[6] + self.ids.cw.height*math.tan(math.radians(temp)) < self.ids.cw.x):
-                self.ids.cw.degree = math.degrees(math.atan((self.ids.cw.x - self.ids.cw.quad_points[6]) / self.ids.cw.height))
-            else:
-                self.ids.cw.degree = temp
+        # Add the current choice, check if reversal is happening
+        self.track_rev(rel_pos)
+        # Save trial data
+        self.save_trial_data(rel_pos) 
 
-        elif rel_pos == 'right':
-            temp = self.ids.cw.degree + self.delta_d
 
-            # Set the right limit
-            if (self.ids.cw.quad_points[6] + self.ids.cw.height*math.tan(math.radians(temp)) > self.ids.cw.right):
-                self.ids.cw.degree = math.degrees(math.atan((self.ids.cw.right - self.ids.cw.quad_points[6]) / self.ids.cw.height))
-            else:
-                self.ids.cw.degree = temp
-
-        self.trial_num += 1
-        self.trial_total += 1
-
-        if self.trial_num == 20 or self.rev_count == 5:
+        # If you have reached the end...
+        if self.trial_num == 19 or self.rev_count == 5:
             self.reset(self.block_num)
+        else: 
+            # next step deviation angle
+            if rel_pos == 'left':
+                temp = self.ids.cw.degree - self.delta_d
+
+                # Set the left limit
+                if (self.ids.cw.quad_points[6] + self.ids.cw.height*math.tan(math.radians(temp)) < self.ids.cw.x):
+                    self.ids.cw.degree = math.degrees(math.atan((self.ids.cw.x - self.ids.cw.quad_points[6]) / self.ids.cw.height))
+                else:
+                    self.ids.cw.degree = temp
+
+            elif rel_pos == 'right':
+                temp = self.ids.cw.degree + self.delta_d
+
+                # Set the right limit
+                if (self.ids.cw.quad_points[6] + self.ids.cw.height*math.tan(math.radians(temp)) > self.ids.cw.right):
+                    self.ids.cw.degree = math.degrees(math.atan((self.ids.cw.right - self.ids.cw.quad_points[6]) / self.ids.cw.height))
+                else:
+                    self.ids.cw.degree = temp
+
+            self.trial_num += 1
+            self.trial_total += 1
+
+
+            ## change the colors of the screen
+            self.change_col_setting()
 
     def reset(self, block_num):
+
         # Refresh the parameters
         self.rev_count = 0
         self.prev_choice = list()
@@ -749,16 +755,19 @@ class TestScreenAS(Screen):
             # A new block begins
             self.block_num += 1
             # New display configuration
-            self.ids.cw.degree = -1 * self.ids.cw.dir * 50
+            self.ids.cw.degree = -1 * self.ids.cw.dir * 60
             # There's no turning back
             self.ids.layout.remove_widget(self.ids._backward)
             # The buttons would be disabled until an experimenter presses the 'resume' button
             self.ids._more_left.disabled = True
             self.ids._more_right.disabled = True
+            # Don't forget to update the total trial number
+            self.trial_total += 1
 
         else:
             # Dump everything to the store and move to the outcome screen
             store.put(subid, subj_info = subj_info, subj_anth = subj_anth, subj_trial_info = self.subj_trial_info)
+            self.parent.ids.outsc.avg_performance = str(np.mean(np.array(self.stimuli)))
             self.block_num -= 1
             self.trial_total = 0
             self.subj_trial_info = {}
@@ -775,18 +784,17 @@ class TestScreenPM(Screen):
         self.rgblist1 = [(1, 0, 0, 1), (1, 1, 0, 1), (0, 1, 0, 1)]
         self.rgblist2 = [(0, 0, 1, 1), (0.5, 0, 1, 1), (1, 0.56, 0.75, 1)]
         self.rgbindex = 0
-        # checking if the reverse is happening
-        self.prev_choice = list()
         # check the trial number(within a session)
         self.trial_num = 0
         # delta_d will alternate between psi_obj and psi_obj2
         self.delta_d = psi_obj.xCurrent
+        self.psi_stims = list()
         self.subj_trial_info = {}
         # mark where psi_obj 1 will be used
-        list1 = [range(x, y) for x, y in zip([0, 15, 25, 35, 45, 55], [10, 20, 30, 40, 50, 57])]
+        list1 = [range(x, y) for x, y in zip([0, 12, 22, 32, 40], [7, 17, 27, 35, 43])]
         psi_obj1_trials = [int(item) for sublist in list1 for item in sublist]
         # the complete order = 0: psi_obj1 // 1:psi_obj2
-        self.psi_order = np.ones(64)
+        self.psi_order = np.ones(46)
         self.psi_order[psi_obj1_trials] = 0
         self.psi_type = ['A', 'B']
 
@@ -803,20 +811,9 @@ class TestScreenPM(Screen):
         self.ids._more_right.background_color = self.ids.cw.bg_color_before
         self.rgbindex = rgb_index
 
-    # keep track of reversals
-    def track_choices(self, response):
-        self.prev_choice.append(response)
+    def save_trial_data(self, rel_pos): 
 
-    def where_is_your_finger(self, rel_pos):
-
-        ## change the colors of the screen
-        self.change_col_setting()
-
-        ## Add the current choice, check if reversal is happening
-        self.track_choices(rel_pos)
-
-        ## Save the current degree
-        degree_current = self.ids.cw.degree
+        self.psi_stims.append(self.ids.cw.degree)
 
         x_coord_current = self.ids.cw.quad_points[4]
         if x_coord_current > self.ids.cw.x_correct:
@@ -825,14 +822,20 @@ class TestScreenPM(Screen):
             correct_ans = "right"
 
         # Compare if the response is correct
-        right_or_wrong = int(rel_pos == correct_ans)
+        self.right_or_wrong = int(rel_pos == correct_ans)
 
-        self.subj_trial_info["_".join(["TRIAL", str(self.trial_num)])] = {'trial_num': self.trial_num, 'Psi_obj': self.psi_type[int(self.psi_order[self.trial_num])], 'Psi_stimulus(deg)': degree_current, 'Visual_stimulus(deg)': self.ids.cw.false_ref + self.ids.cw.degree_dir * degree_current, 'correct_ans': correct_ans, 'response': self.prev_choice[-1], 'response_correct': right_or_wrong}
+        self.subj_trial_info["_".join(["TRIAL", str(self.trial_num)])] = {'trial_num': self.trial_num, 'Psi_obj': self.psi_type[int(self.psi_order[self.trial_num])], 'Psi_stimulus(deg)': self.ids.cw.degree, 'Visual_stimulus(deg)': self.ids.cw.false_ref + self.ids.cw.degree_dir * self.ids.cw.degree, 'correct_ans': correct_ans, 'response': rel_pos, 'response_correct': self.right_or_wrong} 
 
-        if self.trial_num < 63:
+    def where_is_your_finger(self, rel_pos):
 
+        self.save_trial_data(rel_pos)
+
+        # If You are on the final trial, reset everything
+        if self.trial_num == 45: 
+            self.reset()
+        else: 
             if self.psi_order[self.trial_num] == 0:
-                psi_obj.addData(right_or_wrong)
+                psi_obj.addData(self.right_or_wrong)
                 while psi_obj.xCurrent is None: # Wait until calculation is complete
                     pass
                 if self.psi_order[self.trial_num + 1] == 1:
@@ -842,7 +845,7 @@ class TestScreenPM(Screen):
                 else:
                     self.delta_d = psi_obj.xCurrent
             else:
-                psi_obj2.addData(right_or_wrong)
+                psi_obj2.addData(self.right_or_wrong)
                 while psi_obj2.xCurrent is None:
                     pass
                 if self.psi_order[self.trial_num + 1] == 0:
@@ -856,16 +859,14 @@ class TestScreenPM(Screen):
 
             self.trial_num += 1
 
-        # If You are on the final trial, reset everything
-        else:
-            self.reset()
+            ## change the colors of the screen
+            self.change_col_setting()
 
     def reset(self):
         # Dump everything to the store
-        store.put(subid, subj_info = subj_info, subj_anth = subj_anth, subj_trial_info = self.subj_trial_info)
+        store.put(subid, subj_info = subj_info, subj_anth = subj_anth, subj_trial_info = self.subj_trial_info) 
 
-        # Renew the list of stored choices
-        self.prev_choice = list()
+        self.parent.ids.outsc.avg_performance = str(np.mean(np.array(self.psi_stims[-11:])) - 5.0)
 
         # Trial number renewed
         self.trial_num = 0
@@ -889,6 +890,8 @@ class TestScreenPM(Screen):
         self.parent.current = "outcome_screen"
 
 class OutcomeScreen(Screen):
+
+    avg_performance = StringProperty('')
 
     def start_a_new_subject(self):
         # Reset the inputs of the first parameter input screen
