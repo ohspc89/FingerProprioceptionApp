@@ -508,19 +508,22 @@ mu = threshold parameter
 sigma = slope parameter
 StimLevels = delta angle
 '''
-ntrials = 23
-mu = np.linspace(0, 30, 151)
-sigma = np.linspace(0.05, 1, 151)
+ntrials = 25
+#mu = np.arange(0.1, 45.8, 0.1)
+mu = np.concatenate((np.arange(0.1, 15.1, 0.1), np.linspace(20, 44, 120)))
+mu = np.delete(mu, 49)
+sigma = np.linspace(0.05, 1, 21)
 lapse = 0.05
 guessRate = 0.5
 
 # 5.0 degrees deviation means the exact spot of the center of an index finger - skipped
-stimLevels = np.arange(0, 15.1, 0.1)
-stimLevels = np.delete(stimLevels, np.where(stimLevels == 5.0))
+stimLevels = np.concatenate((np.arange(0.1, 15.1, 0.1), np.linspace(20, 22, 120)))
+#np.arange(0, 45.8, 0.1)
+stimLevels = np.delete(stimLevels, 49)
 
 slopePrior = ('gamma', 2, 20)
 
-psi_obj = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = ntrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = slopePrior, guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True)
+psi_obj = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = ntrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True)
 
 psi_obj2 = copy.copy(psi_obj)
 
@@ -715,7 +718,7 @@ class TestScreenAS(Screen):
 
 
         # If you have reached the end...
-        if self.trial_num == 19 or self.rev_count == 5:
+        if self.trial_num == 19 or self.rev_count == 4:
             self.reset(self.block_num)
         else: 
             # next step deviation angle
