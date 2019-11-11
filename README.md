@@ -48,11 +48,17 @@ This is a project to build an app that would test Hand Proprioception
 - [x] Check if a researcher has correctly pushed the next button -> make "Next" doesn't work unless contents saved??
       >> Have the "Save" button to check if everything is correctly entered.
   
-## For V2 (ETA: First week of June)
+## V2 (Tested during the D2D State Fair 2019)
 - [x] Experimental data should be saved somewhere
-- [ ] Drop-down menu for different options
+- [x] Drop-down menu for different options -> changed it to a radiobutton
 
-      1. Mean & SD (Priority)  
-      2. Typical psychophysical function 
-      3. Psi-marginal
+      1. Mean & SD (Priority) -> dropped 
+      2. Typical psychophysical function -> adaptive staircase (Hoseini et al., 2015)
+      3. Psi-marginal (Prins, 2013)
 - [x] The python filename should be "main.py" [Kivy Buildozer requirement]
+
+## V3_alpha (update: 19.11.11)
+1. Single bar moving without any restrictions
+
+## V3_beta (ETA: Dec. 19)
+1. Display should be the shape of semicircle.
