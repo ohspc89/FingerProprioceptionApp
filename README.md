@@ -48,7 +48,7 @@ This is a project to build an app that would test Hand Proprioception
 - [x] Check if a researcher has correctly pushed the next button -> make "Next" doesn't work unless contents saved??
       >> Have the "Save" button to check if everything is correctly entered.
   
-## V2 (Tested during the D2D State Fair 2019)
+## V1 (Tested during the D2D State Fair 2019)
 - [x] Experimental data should be saved somewhere
 - [x] Drop-down menu for different options -> changed it to a radiobutton
 
@@ -57,8 +57,8 @@ This is a project to build an app that would test Hand Proprioception
       3. Psi-marginal (Prins, 2013)
 - [x] The python filename should be "main.py" [Kivy Buildozer requirement]
 
-## V3_alpha (update: 19.11.11)
+## V2_alpha (update: 19.11.11)
 1. Single bar moving without any restrictions
 
-## V3_beta (ETA: Dec. 19)
+## V2_beta (ETA: Dec. 19)
 1. Display should be the shape of semicircle.
