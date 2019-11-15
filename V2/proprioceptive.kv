@@ -27,6 +27,14 @@
     size_hint: 0.25, 0.1 
     spacing: 10
 
+<PopupButton@Button>
+	background_normal: ""
+	background_color: 1, 1, 1, 1
+	size_hint: 0.6, 0.5
+	pos_hint: {"x": 0.2, "y": 0.25}
+	font_size: 25
+	halign: "center"
+
 <CustomCircle@Widget>
     canvas:
         Color:
@@ -72,10 +80,12 @@
     bg_color_before: 0, 0, 1, 1
     canvas.before:
         Color:
-            rgba: 0,0,0,1
-        Rectangle:
-            pos: self.x, self.y 
-            size: self.width, self.height
+            rgba: self.bg_color_before
+        Ellipse:
+			pos: self.x, self.y - self.height
+			size: self.width, self.height*2
+			angle_start: 90
+			angle_end: -90
     # Initial screen color on the left: Red
     # Initial screen color on the left: Red
     bg_color_after: 1, 0, 0, 1
@@ -95,11 +105,32 @@
 	diag: 3
 
 	canvas.after:
+		
+		# Using an elliptical mask
+		StencilPush
+        Ellipse:
+			pos: self.x, self.y - self.height
+			size: self.width, self.height*2
+			angle_start: 90
+			angle_end: -90
+
+		StencilUse
+
 		Color:
-			rgba: 1, 1, 1, 1 
-		Line:
-			points: [self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0 + 0.25) * math.cos(math.radians(90 - self.theta)) - self.dir * self.height*math.tan(math.radians(90 - (self.false_ref + self.degree_dir * self.degree))), self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0 + 0.25) * math.cos(math.radians(90 - self.theta)), self.y]
-			width: 5
+			rgba: self.bg_color_after 
+
+		Quad:
+			points: [self.x, self.y, self.x, self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0 + 0.25) * math.cos(math.radians(90 - self.theta)) - self.dir * self.height*math.tan(math.radians(90 - (self.false_ref + self.degree_dir * self.degree))), self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0 + 0.25) * math.cos(math.radians(90 - self.theta)), self.y]
+
+		StencilUnUse
+
+        Ellipse:
+			pos: self.x, self.y - self.height
+			size: self.width, self.height*2
+			angle_start: 90
+			angle_end: -90
+
+		StencilPop
 
 <CalibrationScreen>:
     FloatLayout:
@@ -109,35 +140,31 @@
                 #root.manager.current = "param_screen_one"
 
 <CalibPopup>:
-    Button:
+    PopupButton:
 		id: cpopup 
-		background_normal: ""
-		background_color: 1, 1, 1, 1
-		size_hint: 0.6, 0.5
-		pos_hint: {"x": 0.2, "y": 0.25}
 		text: "Touch HERE\n(If Calibration is COMPLETE)\n \nTouch OUTSIDE THIS WINDOW\n(Otherwise)"
 		color: 1, 0, 0, 1
-		font_size: 25
-		halign:"center"
         on_press: 
 			app.root.current = "param_screen_one"
 			root.dismiss()
 
 <ParamPopup>:
 	argh: ppopup
-	Button:
+	PopupButton:
 		id: ppopup
-		background_normal: ""
-		background_color: 1, 1, 1, 1
-		text: "INPUT SAVED!"
 		color: 0, 0, 1, 1
-		font_size: 25
-		haligh: "center"
-		size_hint: 0.6, 0.5
-		pos_hint: {"x":0.2, "y": 0.25}
 		on_press:
 			root.dismiss()
-		
+
+<TrialPMc4Popup>:
+	argh: trialpmc4
+	PopupButton:
+		id: trialpmc4
+		color: 0, 0, 1, 1
+		on_press:
+			app.root.current = "test_screen_PM"
+			root.dismiss()
+
 # 3 items repeatedly used in the two parameter input screens
 
 <PTextInput@TextInput>:
@@ -311,7 +338,6 @@
                     on_press: 
                         root.show_popup()
 
-
 <ParamInputScreenTwo>: 
     flen_text_input: flen
     fwid_text_input: fwid
@@ -386,12 +412,69 @@
                     on_press: 
                         root.manager.current = "param_screen_one"
 
-
                 PButton:
                     text: "Next"
                     pos_hint: {'center_x':0.6, 'center_y':0.4}
                     on_press: 
                         root.show_popup2()
+
+<PMTrialScreen>:
+
+    handedness: cw
+	backbutton: _backward
+
+    FloatLayout:
+		id: layout
+        CustomButton:
+            id: _more_left 
+            background_color: 1, 0, 0, 1
+            background_normal: ""
+            # move the button to the right if your dominant hand is left 
+            pos_hint: {'x':0.03, 'y': 0.1} if root.ids.cw.dir == 1 else {'x': 0.445, 'y':0.1} 
+            on_press: 
+				root.chk_if_corr('left')
+
+        CustomButton:
+            id: _more_right
+            background_color: 0, 0, 1, 1
+            background_normal: ""
+            background_down: "black"
+            # Button positions may need more discussion
+            pos_hint: {'x':0.305, 'y':0.1} if root.ids.cw.dir == 1 else {'x':0.72, 'y':0.1}
+            on_press: 
+				root.chk_if_corr('right')
+
+		CustomButton:
+			id: _backward
+			text: "Back"
+			pos_hint: {'x':0.72, 'y':0.1} if root.ids.cw.dir == 1 else {'x': 0.03, 'y':0.1}
+			on_press: 
+				root.manager.current = "param_screen_two"
+
+        ColorScreen:
+            id: cw
+            # have the colorscreen be centered!!
+            size_hint: (None, None)
+
+            # Leave 1cm from the top 
+			topspace: 1.0
+
+            # height: from MP joint to the 1 cm below the top of the display
+            size: root.width - cm(self.topspace), root.height - root.center_y + math.sin(math.radians(self.theta)) * cm(self.diag) - math.sin(math.radians(90 - self.theta)) * cm(self.mprad/10.0 + 0.25) - cm(self.topspace)
+
+            # This bottom left corner position
+            pos: (root.x + cm(self.topspace/2.0), root.center_y - math.sin(math.radians(self.theta)) * cm(self.diag) + math.sin(math.radians(90 - self.theta)) * cm(self.mprad/10.0 + 0.25))
+
+            # Initial tilt
+            degree: float(root.delta_d)
+
+            # This is used to update the position of the moving point
+			quad_points: [self.x, self.y, self.x, self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0 + 0.25) * math.cos(math.radians(90 - self.theta)) - self.dir*self.height*math.tan(math.radians(90 - (self.false_ref + self.degree_dir * self.degree))), self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0 + 0.25) * math.cos(math.radians(90 - self.theta)), self.y]
+
+			x_correct: self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0 + 0.25) * math.cos(math.radians(90 - self.theta)) - self.dir * self.height * math.tan(math.radians(90 - self.theta)) 
+
+        CustomCircle:
+            pos: (root.center_x + root.ids.cw.dir*math.cos(math.radians(root.ids.cw.theta)) * cm(root.ids.cw.diag) + root.ids.cw.dir * cm(root.ids.cw.mprad/10.0 + 0.25) * math.cos(math.radians(90 - root.ids.cw.theta)) - cm(0.25), root.center_y - math.sin(math.radians(root.ids.cw.theta)) * cm(root.ids.cw.diag) + math.sin(math.radians(90 - root.ids.cw.theta)) * cm(root.ids.cw.mprad/10.0 + 0.25) - cm(0.25))
 
 # The actual color screen when Psi-Marginal is checked
 <TestScreenPM>:
@@ -425,6 +508,7 @@
 		CustomButton:
 			id: _resume
 			text: "Resume"
+			size_hint: 0.1, 0.1
 			pos_hint: {'x':0.72, 'y':0.1} if root.ids.cw.dir == 1 else {'x': 0.03, 'y':0.1}
 			disabled: False 
 			on_press: 
@@ -434,11 +518,11 @@
 		CustomButton:
 			id: _backward
 			text: "Back"
-			pos_hint: {'x':0.72, 'y':0.1} if root.ids.cw.dir == 1 else {'x': 0.03, 'y':0.1}
+			size_hint: 0.1, 0.1
+			pos_hint: {'x':0.85, 'y':0.1} if root.ids.cw.dir == 1 else {'x': 0.18, 'y':0.1}
 			disabled: False 
 			on_press: 
 				root.manager.current = "param_screen_two"
-
 
         ColorScreen:
             id: cw
@@ -457,11 +541,8 @@
             # Initial tilt
             degree: float(root.delta_d)
 			
-            # <dir> will be given by the choice of left or right
-            # 1: Right / -1: Left
-
             # This is used to update the position of the moving point
-            points : [self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0 + 0.25) * math.cos(math.radians(90 - self.theta)) - self.dir * self.height*math.tan(math.radians(90 - (self.false_ref + self.degree_dir * self.degree))), self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0 + 0.25) * math.cos(math.radians(90 - self.theta)), self.y]
+			quad_points: [self.x, self.y, self.x, self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0 + 0.25) * math.cos(math.radians(90 - self.theta)) - self.dir*self.height*math.tan(math.radians(90 - (self.false_ref + self.degree_dir * self.degree))), self.top, self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0 + 0.25) * math.cos(math.radians(90 - self.theta)), self.y]
 			x_correct: self.center_x + self.dir * cm(self.diag) * math.cos(math.radians(self.theta)) + self.dir * cm(self.mprad/10.0 + 0.25) * math.cos(math.radians(90 - self.theta)) - self.dir * self.height * math.tan(math.radians(90 - self.theta)) 
 
         # MP point
@@ -485,7 +566,6 @@
 			disabled: False
             on_press:
 				root.where_is_your_finger('left')
-
 
         CustomButton:
             id: _more_right
@@ -580,6 +660,9 @@
     ParamInputScreenTwo:
         id: paramsc
         name: "param_screen_two"
+	PMTrialScreen:
+		id: trialsc_pm
+		name: "trial_screen_PM"
     TestScreenPM:
         id: testsc_pm
         name: "test_screen_PM"
