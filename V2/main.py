@@ -4,6 +4,7 @@ from random import randrange
 from kivy.uix.screenmanager import Screen, ScreenManager, FadeTransition
 from kivy.core.window import Window
 from kivy.app import App
+from kivy.clock import Clock
 from kivy.properties import ObjectProperty, StringProperty
 from kivy.uix.popup import Popup
 from kivy.uix.floatlayout import FloatLayout
@@ -522,10 +523,6 @@ stimLevels = np.delete(stimLevels, 49)
 
 #slopePrior = ('gamma', 2, 20)
 
-# The first psi_obj.xCurrent = 15
-psi_obj = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = ntrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True)
-
-psi_obj2 = copy.copy(psi_obj)
 
 class CalibrationScreen(Screen):
 
@@ -542,6 +539,9 @@ class ParamPopup(Popup):
     pass
 
 class TrialPMc4Popup(Popup):
+    pass
+
+class AreYouSurePopup(Popup):
     pass
 
 class ParamInputScreenOne(Screen):
@@ -614,6 +614,12 @@ class ParamInputScreenOne(Screen):
 
             # Just for fool-proof
             self.handed_chk = True
+
+    global psi_obj1, psi_obj2
+    # The first psi_obj.xCurrent = 15
+    psi_obj1 = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = ntrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True)
+
+    psi_obj2 = copy.copy(psi_obj1)
 
 class ParamInputScreenTwo(Screen):
 
@@ -799,7 +805,7 @@ class PMTrialScreen(Screen):
         self.rgbindex = 0
         # check the trial number(within a session)
         self.trial_num = 0
-        self.delta_d = 25 
+        self.delta_d = 30 
 
     # changes the color of the buttons as well as the screen
     def change_col_setting(self):
@@ -835,10 +841,12 @@ class PMTrialScreen(Screen):
             self.ids.cw.degree_dir = -1 * self.ids.cw.degree_dir
             # For third and fourth trials, the degree should be 25
             if self.trial_num == 2:
-                self.delta_d = 30.0
+                self.ids.cw.degree = 20.0
             if self.trial_num == 4:
                 the_popup = TrialPMc4Popup(title = "READ IT", size_hint = (None, None), size = (400, 400))
                 the_popup.argh.text = "Starting the actual test"
+                # Reset the trial number so that if revisted, it could start normally again.
+                self.trial_num = 0
                 the_popup.open()
             else:
                 the_popup = ParamPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
@@ -851,9 +859,13 @@ class PMTrialScreen(Screen):
             # If you are wrong, everything resets
             self.trial_num = 0
 
+## Actual Psi-marginal testing screen
 class TestScreenPM(Screen):
 
     handedness = ObjectProperty(None)
+    leftbutton = ObjectProperty()
+    rightbutton = ObjectProperty()
+
 
     def __init__(self, **kwargs):
         super(TestScreenPM, self).__init__(**kwargs)
@@ -863,7 +875,7 @@ class TestScreenPM(Screen):
         # check the trial number(within a session)
         self.trial_num = 0
         # delta_d will alternate between psi_obj and psi_obj2
-        self.delta_d = psi_obj.xCurrent
+        self.delta_d = psi_obj1.xCurrent
         self.psi_stims = list()
         self.subj_trial_info = {}
         # mark where psi_obj 1 will be used
@@ -873,6 +885,14 @@ class TestScreenPM(Screen):
         self.psi_order = np.ones(50)
         self.psi_order[psi_obj1_trials] = 0
         self.psi_type = ['A', 'B']
+        self.first_few = {}
+        # Just not calling defaultdict...
+        self.first_few['A'] = list()
+        self.first_few['B'] = list()
+        # index of fucking up...
+        self.fucked_up = False
+        # fucked_up counts
+        self.fucked_up_cnt = 0
 
     # changes the color of the buttons as well as the screen
     def change_col_setting(self):
@@ -887,6 +907,22 @@ class TestScreenPM(Screen):
         self.ids._more_right.background_color = self.ids.cw.bg_color_before
         self.rgbindex = rgb_index
 
+    ## n is either a integer or a list; msg is a string
+    def clearance(self, n, msg):
+        if type(n) is list:
+            for i in range(n[0], n[1]):
+                del self.subj_trial_info["_".join(["TRIAL", str(i)])]
+        else: 
+            for i in range(n):
+                del self.subj_trial_info["_".join(["TRIAL", str(i)])]
+        self.subj_trial_info["NOTE"] = msg
+        if self.fucked_up_cnt == 0 and n == 6:
+            global psi_obj1
+            psi_obj1 = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = ntrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True)
+        elif self.fucked_up_cnt == 0 and n == 11:
+            global psi_obj2
+            psi_obj2 = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = ntrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True) 
+
     def save_trial_data(self, rel_pos): 
 
         self.psi_stims.append(self.ids.cw.degree)
@@ -900,34 +936,125 @@ class TestScreenPM(Screen):
         # Compare if the response is correct
         self.right_or_wrong = int(rel_pos == correct_ans)
 
+        # saving the response for the current psi direction: 'A' or 'B'
+        self.first_few[self.psi_type[int(self.psi_order[self.trial_num])]].append(self.right_or_wrong) 
+
+        if self.fucked_up_cnt == 0:
+            ## If 3 consecutive fails (= [0, 0, 0]) in the first 7 'A' trials,
+            ## erase all those 7 trials and begin anew with 'B' trials
+            if self.trial_num == 6 and any([self.first_few['A'][i], self.first_few['A'][i+1], self.first_few['A'][i+2]] == [0,0,0] for i in range(len(self.first_few['A']) - 2)):
+                the_popup = AreYouSurePopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
+                the_popup.open()
+                threading.Thread(target = self.clearance, args = (6, "The participant missed three consecutive trials in the first seven A trials")).start()
+                # Start again from B
+                self.trial_num = 0
+                self.fucked_up_cnt += 1
+                list1 = [range(x, y) for x, y in zip([5, 17, 27, 37, 47 ], [12, 22, 32, 42, 50])]
+                psi_obj1_trials = [int(item) for sublist in list1 for item in sublist]
+                # Psi-order should be renewed
+                self.psi_order = np.ones(50)
+                self.psi_order[psi_obj1_trials] = 0
+                #global psi_obj1
+                ## New Psi-obj1 starts
+                #psi_obj1 = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = ntrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True)
+                ## Fucked up status turns on
+                self.fucked_up = True
+                # Previous record removed
+                self.first_few['A'] = []
+
+            ## If you have passed the first 7 'A' trials, but make 3 consecutive fails in the first 5
+            ## 'B' trials, then erase all those 5 'B' trials and continue with the 'A' trials
+            elif self.trial_num == 11 and any([self.first_few['B'][i], self.first_few['B'][i+1], self.first_few['B'][i+2]] == [0,0,0] for i in range(len(self.first_few['B']) - 2)):
+                the_popup = AreYouSurePopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
+                the_popup.open()
+                threading.Thread(target = self.clearance, args = ([7,11], "The participant failed three times in a row during the first five B trials")).start()
+                # Return to the point where the participant was still okay.
+                self.trial_num = 7
+                self.fucked_up_cnt += 1
+                list1 = [range(x, y) for x, y in zip([7, 17, 27, 40],[12,22,32,43])]
+                psi_obj1_trials = [int(item) for sublist in list1 for item in sublist]
+                self.psi_order[7:50] = np.ones(43)
+                self.psi_order[psi_obj1_trials] = 0
+                #global psi_obj2
+                ## New Psi-obj2 starts
+                #psi_obj2 = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = ntrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True)
+                self.fucked_up = True
+                self.first_few['B'] = []
+
+        elif self.fucked_up_cnt == 1:
+            ## If you have failed in the first 7 'A' trials and fail again in 'B' trials,
+            ## erase all those 5 trials and just stop it...
+            ## You better quit if you have reached here... there's just no point continuing the task 
+            if self.trial_num == 4 and any([self.first_few['B'][i], self.first_few['B'][i+1], self.first_few['B'][i+1]] == [0, 0, 0] for i in range(len(self.first_few['B'])-2)):
+                self.clearance(4, "The participant failed both in the first A and B sets so terminated")
+                # YAY! BYE BYE!
+                self.reset()
+            ## If you have failed in the first 7 'A' trials, passed the new 5 'B' trials, 
+            ## and again failed on the following 7 'A' trials, you are done.
+            elif self.trial_num == 11 and any([self.first_few['A'][i], self.first_few['A'][i+1], self.first_few['A'][i+2]] == [0,0,0] for i in range(len(self.first_few['A']) - 2)):
+                self.clearance(11, "The participant kept failed on 'A' direction so terminated") 
+                self.reset()
+            ## If you hav failed in the first 5 'B' trials, passed the following 5 'A' trials,
+            ## and again failed on the following 5 'B' trials, you are done.
+            elif self.trial_num == 16 and any([self.first_few['B'][i], self.first_few['B'][i+1], self.first_few['B'][i+2]] == [0,0,0] for i in range(len(self.first_few['B']) - 2)):
+                if len(self.first_few['A']) == 7:
+                    pass
+                else: 
+                    self.clearance(16, "The participant kept failed on 'B' direction so terminated")
+                    self.reset()
+
+        ## If you see no issue, go save your trial info!
         self.subj_trial_info["_".join(["TRIAL", str(self.trial_num)])] = {'trial_num': self.trial_num, 'Psi_obj': self.psi_type[int(self.psi_order[self.trial_num])], 'Psi_stimulus(deg)': self.ids.cw.degree, 'Visual_stimulus(deg)': self.ids.cw.false_ref + self.ids.cw.degree_dir * self.ids.cw.degree, 'correct_ans': correct_ans, 'response': rel_pos, 'response_correct': self.right_or_wrong} 
+
+        print(self.fucked_up, 'fkcnt', self.fucked_up_cnt, self.trial_num, self.first_few, psi_obj1.xCurrent, psi_obj2.xCurrent)
+
+    def reactivate_leftbutton(self, *largs):
+        self.leftbutton.disabled = False
+        self.rightbutton.disabled = False
 
     def where_is_your_finger(self, rel_pos):
 
+        self.leftbutton.disabled = True
+        self.rightbutton.disabled = True
+
         self.save_trial_data(rel_pos)
-        self.ids._more_left.disabled = True
-        self.ids._more_right.disabled = True
 
         # If You are on the final trial, reset everything
         if self.trial_num == 49: 
             self.reset()
-        else: 
+        elif self.fucked_up:
+            if len(self.first_few['A']) == 0: 
+                self.delta_d = psi_obj2.xCurrent
+                self.ids.cw.false_ref = 45
+                self.ids.cw.degree_dir = 1 
+                self.ids.cw.degree = float(self.delta_d)
+            elif len(self.first_few['B']) == 0:
+                self.delta_d = psi_obj1.xCurrent
+                self.ids.cw.false_ref = 55
+                self.ids.cw.degree_dir = -1
+                self.ids.cw.degree = float(self.delta_d)
+            # Fucked up status checked
+            self.fucked_up = not(self.fucked_up)
+            # The buttons will be deactivated for 1.5s
+            Clock.schedule_once(self.reactivate_leftbutton, 1.2) 
+
+        else:
             if self.psi_order[self.trial_num] == 0:
-                psi_obj.addData(self.right_or_wrong)
-                while psi_obj.xCurrent is None: # Wait until calculation is complete
+                psi_obj1.addData(self.right_or_wrong)
+                while psi_obj1.xCurrent is None: # Wait until calculation is complete
                     pass
                 if self.psi_order[self.trial_num + 1] == 1:
                     self.delta_d = psi_obj2.xCurrent
                     self.ids.cw.false_ref = 45
                     self.ids.cw.degree_dir = 1
                 else:
-                    self.delta_d = psi_obj.xCurrent
+                    self.delta_d = psi_obj1.xCurrent
             else:
                 psi_obj2.addData(self.right_or_wrong)
                 while psi_obj2.xCurrent is None:
                     pass
                 if self.psi_order[self.trial_num + 1] == 0:
-                    self.delta_d = psi_obj.xCurrent
+                    self.delta_d = psi_obj1.xCurrent
                     self.ids.cw.false_ref = 55
                     self.ids.cw.degree_dir = -1
                 else:
@@ -937,8 +1064,13 @@ class TestScreenPM(Screen):
 
             self.trial_num += 1
 
-            ## change the colors of the screen
-            self.change_col_setting()
+        print(self.fucked_up, 'fkcnt', self.fucked_up_cnt, self.trial_num, self.first_few, psi_obj1.xCurrent, psi_obj2.xCurrent)
+
+        ## change the colors of the screen
+        self.change_col_setting()
+
+        # The buttons will be deactivated for 1.2s
+        Clock.schedule_once(self.reactivate_leftbutton, 1.2) 
 
     def reset(self):
         # Dump everything to the store
@@ -949,13 +1081,26 @@ class TestScreenPM(Screen):
         # Trial number renewed
         self.trial_num = 0
 
+        list1 = [range(x, y) for x, y in zip([0, 12, 22, 32, 42], [7, 17, 27, 37, 45])]
+        psi_obj1_trials = [int(item) for sublist in list1 for item in sublist]
+        # the complete order = 0: psi_obj1 // 1:psi_obj2
+        self.psi_order = np.ones(50)
+        self.psi_order[psi_obj1_trials] = 0
+        self.psi_type = ['A', 'B']
+        self.first_few = {}
+        # Just not calling defaultdict...
+        self.first_few['A'] = list()
+        self.first_few['B'] = list()
+
+        self.fucked_up_cnt = 0
+
         # Psi marginal objects restart
-        global psi_obj, psi_obj2
-        psi_obj = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = ntrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True)
-        psi_obj2 = copy.copy(psi_obj)
+      #  global psi_obj1, psi_obj2
+      #  psi_obj1 = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = ntrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True)
+      #  psi_obj2 = copy.copy(psi_obj1)
 
         # Stimulus is newly assigned from psi_obj 1(= 15 degrees)
-        self.ids.cw.degree = float(psi_obj.xCurrent)
+      #  self.ids.cw.degree = float(psi_obj1.xCurrent)
 
         # False reference moving to 55
         self.ids.cw.false_ref = 55
@@ -972,6 +1117,14 @@ class OutcomeScreen(Screen):
     avg_performance = StringProperty('')
 
     def start_a_new_subject(self):
+        # Psi marginal objects restart
+        global psi_obj1, psi_obj2
+        psi_obj1 = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = ntrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True)
+        psi_obj2 = copy.copy(psi_obj1)
+
+        # Stimulus is newly assigned from psi_obj 1(= 15 degrees)
+        self.parent.ids.testsc_pm.handedness.degree = float(psi_obj1.xCurrent)
+
         # Reset the inputs of the first parameter input screen
         self.parent.ids.paramscone.pid_text_input.text = ''
         self.parent.ids.paramscone.age_text_input.text = ''

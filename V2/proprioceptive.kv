@@ -137,7 +137,6 @@
         GridLines:
             on_touch_down:
 				root.show_popup()
-                #root.manager.current = "param_screen_one"
 
 <CalibPopup>:
     PopupButton:
@@ -163,6 +162,15 @@
 		color: 0, 0, 1, 1
 		on_press:
 			app.root.current = "test_screen_PM"
+			root.dismiss()
+
+<AreYouSurePopup>:
+	PopupButton:
+		id: ayspopup
+		text: "Are you SURE of what to do?\n \n If NO, touch HERE\n \n If Yes,\nTouch OUTSIDE THIS WINDOW"
+		color: 1, 0, 0, 1
+		on_press:
+			app.root.current = "trial_screen_PM"
 			root.dismiss()
 
 # 3 items repeatedly used in the two parameter input screens
@@ -481,6 +489,8 @@
 
     handedness: cw
 	backbutton: _backward
+	leftbutton: _more_left
+	rightbutton: _more_right
 
     FloatLayout:
 		id: layout
@@ -490,7 +500,6 @@
             background_normal: ""
             # move the button to the right if your dominant hand is left 
             pos_hint: {'x':0.03, 'y': 0.1} if root.ids.cw.dir == 1 else {'x': 0.445, 'y':0.1} 
-			disabled: False
             on_press: 
 				root.where_is_your_finger('left')
 
@@ -501,7 +510,6 @@
             background_down: "black"
             # Button positions may need more discussion
             pos_hint: {'x':0.305, 'y':0.1} if root.ids.cw.dir == 1 else {'x':0.72, 'y':0.1}
-			disabled: False
             on_press: 
 				root.where_is_your_finger('right')
 
@@ -519,7 +527,7 @@
 			id: _backward
 			text: "Back"
 			size_hint: 0.1, 0.1
-			pos_hint: {'x':0.85, 'y':0.1} if root.ids.cw.dir == 1 else {'x': 0.18, 'y':0.1}
+			pos_hint: {'x':0.85, 'y':0.1} if root.ids.cw.dir == 1 else {'x': 0.16, 'y':0.1}
 			disabled: False 
 			on_press: 
 				root.manager.current = "param_screen_two"
