@@ -5,7 +5,7 @@ from kivy.uix.screenmanager import Screen, ScreenManager, FadeTransition
 from kivy.core.window import Window
 from kivy.app import App
 from kivy.clock import Clock
-from kivy.properties import ObjectProperty, StringProperty
+from kivy.properties import ObjectProperty, StringProperty, ListProperty, NumericProperty
 from kivy.uix.popup import Popup
 from kivy.uix.floatlayout import FloatLayout
 from kivy.storage.jsonstore import JsonStore
@@ -510,19 +510,23 @@ mu = threshold parameter
 sigma = slope parameter
 StimLevels = delta angle
 '''
+
 ntrials = 25
 mu = np.arange(0.1, 28.0, 0.1)
 mu = np.delete(mu, 49)
 sigma = np.linspace(0.05, 1, 21)
 lapse = np.arange(0.0, 0.1, 0.01)
 guessRate = 0.5
-
 # 5.0 degrees deviation means the exact spot of the center of an index finger - skipped
 stimLevels = np.arange(0.1, 28.0, 0.1)
 stimLevels = np.delete(stimLevels, 49)
-
 #slopePrior = ('gamma', 2, 20)
 
+global psi_obj1, psi_obj2
+# The first psi_obj.xCurrent = 20.0
+psi_obj1 = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = ntrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True)
+
+psi_obj2 = copy.copy(psi_obj1)
 
 class CalibrationScreen(Screen):
 
@@ -559,22 +563,49 @@ class ParamInputScreenOne(Screen):
         if any([self.pid_text_input.text == "", self.age_text_input.text == "", self.gender == None, self.staircase == None, self.handed_chk == False]) is True:
             the_popup.argh.text = "Missing Values"
             the_popup.open()
+        elif self.t.isAlive():
+            the_popup.argh.text = "Wait a moment..."
+            the_popup.open()
         else:
             global subid
             subid = "_".join(["SUBJ", self.pid_text_input.text])
             global subj_info
             subj_info = {'age' : self.age_text_input.text, 'gender' : self.gender, 'right_used' : self.ids.rightchk.active, 'Staircase used': self.staircase}
+            self.parent.ids.trialsc_pm.psi_nTrials = self.psi_nTrials
+            self.parent.ids.testsc_pm.delta_d = float(psi_obj1.xCurrent)
             self.parent.current = "param_screen_two"
+            # debugging...
+            print(self.psi_nTrials, psi_obj1.xCurrent)
+
+    def initialize_psi(self, ntrial):
+        global psi_obj1, psi_obj2
+        psi_obj1 = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = ntrial, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True)
+        psi_obj2 = copy.copy(psi_obj1)
 
     def Psimarginal_Yes(self, state):
-
         # A popup window to make sure that Psi-marginal is chosen
         psi_popup = ParamPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
 
         if state:
+            self.psi_nTrials = 25
+            self.t = threading.Thread(target = self.initialize_psi, args = [25])
+            self.t.start()
             self.staircase = "Psi-Marginal"
             self.parent.ids.paramsc.initd_text_input.text = 'N/A'
-            psi_popup.argh.text = "Psi-Marginal selected"
+            psi_popup.argh.text = "Psi-Marginal(Short) selected"
+            psi_popup.open() 
+
+    def Psimarginal_long_Yes(self, state):
+        # A popup window to make sure that Psi-marginal is chosen
+        psi_popup = ParamPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
+
+        if state:
+            self.psi_nTrials = 50
+            self.t = threading.Thread(target = self.initialize_psi, args = [50])
+            self.t.start()
+            self.staircase = "Psi-Marginal"
+            self.parent.ids.paramsc.initd_text_input.text = 'N/A'
+            psi_popup.argh.text = "Psi-Marginal(Long) selected"
             psi_popup.open()
 
     def Adaptive_Yes(self, state):
@@ -613,13 +644,8 @@ class ParamInputScreenOne(Screen):
             self.parent.ids.testsc_as.handedness.dir = -1
 
             # Just for fool-proof
-            self.handed_chk = True
+            self.handed_chk = True 
 
-    global psi_obj1, psi_obj2
-    # The first psi_obj.xCurrent = 15
-    psi_obj1 = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = ntrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True)
-
-    psi_obj2 = copy.copy(psi_obj1)
 
 class ParamInputScreenTwo(Screen):
 
@@ -797,6 +823,7 @@ class TestScreenAS(Screen):
 class PMTrialScreen(Screen):
 
     handedness = ObjectProperty(None)
+    psi_nTrials = NumericProperty(None)
 
     def __init__(self, **kwargs):
         super(PMTrialScreen, self).__init__(**kwargs)
@@ -805,7 +832,7 @@ class PMTrialScreen(Screen):
         self.rgbindex = 0
         # check the trial number(within a session)
         self.trial_num = 0
-        self.delta_d = 30 
+        self.delta_d = 13
 
     # changes the color of the buttons as well as the screen
     def change_col_setting(self):
@@ -824,7 +851,6 @@ class PMTrialScreen(Screen):
     def chk_if_corr(self, rel_pos): 
 
         x_coord_current = self.ids.cw.quad_points[4]
-        print(self.ids.cw.x_correct, x_coord_current)
         if x_coord_current > self.ids.cw.x_correct:
             correct_ans = "left"
         else:
@@ -841,12 +867,25 @@ class PMTrialScreen(Screen):
             self.ids.cw.degree_dir = -1 * self.ids.cw.degree_dir
             # For third and fourth trials, the degree should be 25
             if self.trial_num == 2:
-                self.ids.cw.degree = 20.0
+                self.ids.cw.degree = 10.0
             if self.trial_num == 4:
+                print(self.psi_nTrials)
                 the_popup = TrialPMc4Popup(title = "READ IT", size_hint = (None, None), size = (400, 400))
                 the_popup.argh.text = "Starting the actual test"
+                if self.psi_nTrials == 25:
+                    list_all = [range(x, y) for x, y in zip([0, 12, 22, 32, 42], [7, 17, 27, 37, 45])]
+                else:
+                    list_all = [range(x, y) for x, y in zip([0, 12, 22, 32, 42, 50, 62, 72, 82, 92], [7, 17, 27, 37, 45, 57, 67, 77, 87, 95])]
+
+                psi_order = np.ones(self.psi_nTrials*2)
+                psi_obj1_trials = [int(item) for sublist in list_all for item in sublist]
+                psi_order[psi_obj1_trials] = 0
+                self.parent.ids.testsc_pm.psi_order = psi_order
+                self.parent.ids.testsc_pm.psi_nTrials = self.psi_nTrials
+
                 # Reset the trial number so that if revisted, it could start normally again.
                 self.trial_num = 0
+                
                 the_popup.open()
             else:
                 the_popup = ParamPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
@@ -858,6 +897,8 @@ class PMTrialScreen(Screen):
             the_popup.open()
             # If you are wrong, everything resets
             self.trial_num = 0
+            self.ids.cw.degree = 13.0
+            self.ids.cw.degree_dir = -1 * self.ids.cw.degree_dir
 
 ## Actual Psi-marginal testing screen
 class TestScreenPM(Screen):
@@ -865,6 +906,9 @@ class TestScreenPM(Screen):
     handedness = ObjectProperty(None)
     leftbutton = ObjectProperty()
     rightbutton = ObjectProperty()
+    psi_order = ListProperty()
+    psi_nTrials = NumericProperty()
+    delta_d = NumericProperty()
 
 
     def __init__(self, **kwargs):
@@ -874,16 +918,12 @@ class TestScreenPM(Screen):
         self.rgbindex = 0
         # check the trial number(within a session)
         self.trial_num = 0
+        global psi_obj1
         # delta_d will alternate between psi_obj and psi_obj2
-        self.delta_d = psi_obj1.xCurrent
+        #self.delta_d = psi_obj1.xCurrent
         self.psi_stims = list()
         self.subj_trial_info = {}
-        # mark where psi_obj 1 will be used
-        list1 = [range(x, y) for x, y in zip([0, 12, 22, 32, 42], [7, 17, 27, 37, 45])]
-        psi_obj1_trials = [int(item) for sublist in list1 for item in sublist]
-        # the complete order = 0: psi_obj1 // 1:psi_obj2
-        self.psi_order = np.ones(50)
-        self.psi_order[psi_obj1_trials] = 0
+
         self.psi_type = ['A', 'B']
         self.first_few = {}
         # Just not calling defaultdict...
@@ -952,11 +992,8 @@ class TestScreenPM(Screen):
                 list1 = [range(x, y) for x, y in zip([5, 17, 27, 37, 47 ], [12, 22, 32, 42, 50])]
                 psi_obj1_trials = [int(item) for sublist in list1 for item in sublist]
                 # Psi-order should be renewed
-                self.psi_order = np.ones(50)
+                self.psi_order = np.ones(psi_obj1.nTrials*2-1)
                 self.psi_order[psi_obj1_trials] = 0
-                #global psi_obj1
-                ## New Psi-obj1 starts
-                #psi_obj1 = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = ntrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True)
                 ## Fucked up status turns on
                 self.fucked_up = True
                 # Previous record removed
@@ -975,9 +1012,6 @@ class TestScreenPM(Screen):
                 psi_obj1_trials = [int(item) for sublist in list1 for item in sublist]
                 self.psi_order[7:50] = np.ones(43)
                 self.psi_order[psi_obj1_trials] = 0
-                #global psi_obj2
-                ## New Psi-obj2 starts
-                #psi_obj2 = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = ntrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True)
                 self.fucked_up = True
                 self.first_few['B'] = []
 
@@ -1006,37 +1040,37 @@ class TestScreenPM(Screen):
         ## If you see no issue, go save your trial info!
         self.subj_trial_info["_".join(["TRIAL", str(self.trial_num)])] = {'trial_num': self.trial_num, 'Psi_obj': self.psi_type[int(self.psi_order[self.trial_num])], 'Psi_stimulus(deg)': self.ids.cw.degree, 'Visual_stimulus(deg)': self.ids.cw.false_ref + self.ids.cw.degree_dir * self.ids.cw.degree, 'correct_ans': correct_ans, 'response': rel_pos, 'response_correct': self.right_or_wrong} 
 
-        print(self.fucked_up, 'fkcnt', self.fucked_up_cnt, self.trial_num, self.first_few, psi_obj1.xCurrent, psi_obj2.xCurrent)
-
     def reactivate_leftbutton(self, *largs):
         self.leftbutton.disabled = False
         self.rightbutton.disabled = False
 
     def where_is_your_finger(self, rel_pos):
 
+        # buttons are disabled for a short amount of time
         self.leftbutton.disabled = True
         self.rightbutton.disabled = True
 
         self.save_trial_data(rel_pos)
 
+        print('status?', self.trial_num)
         # If You are on the final trial, reset everything
         if self.trial_num == 49: 
             self.reset()
         elif self.fucked_up:
             if len(self.first_few['A']) == 0: 
-                self.delta_d = psi_obj2.xCurrent
+                self.delta_d = float(psi_obj2.xCurrent)
                 self.ids.cw.false_ref = 45
                 self.ids.cw.degree_dir = 1 
                 self.ids.cw.degree = float(self.delta_d)
             elif len(self.first_few['B']) == 0:
-                self.delta_d = psi_obj1.xCurrent
+                self.delta_d = float(psi_obj1.xCurrent)
                 self.ids.cw.false_ref = 55
                 self.ids.cw.degree_dir = -1
                 self.ids.cw.degree = float(self.delta_d)
             # Fucked up status checked
             self.fucked_up = not(self.fucked_up)
-            # The buttons will be deactivated for 1.5s
-            Clock.schedule_once(self.reactivate_leftbutton, 1.2) 
+            # The buttons will be reactivated after 1.2s
+            Clock.schedule_once(self.reactivate_leftbutton, 0.5) 
 
         else:
             if self.psi_order[self.trial_num] == 0:
@@ -1044,33 +1078,33 @@ class TestScreenPM(Screen):
                 while psi_obj1.xCurrent is None: # Wait until calculation is complete
                     pass
                 if self.psi_order[self.trial_num + 1] == 1:
-                    self.delta_d = psi_obj2.xCurrent
+                    self.delta_d = float(psi_obj2.xCurrent)
                     self.ids.cw.false_ref = 45
                     self.ids.cw.degree_dir = 1
                 else:
-                    self.delta_d = psi_obj1.xCurrent
+                    self.delta_d = float(psi_obj1.xCurrent)
             else:
                 psi_obj2.addData(self.right_or_wrong)
                 while psi_obj2.xCurrent is None:
                     pass
                 if self.psi_order[self.trial_num + 1] == 0:
-                    self.delta_d = psi_obj1.xCurrent
+                    self.delta_d = float(psi_obj1.xCurrent)
                     self.ids.cw.false_ref = 55
                     self.ids.cw.degree_dir = -1
                 else:
-                    self.delta_d = psi_obj2.xCurrent
+                    self.delta_d = float(psi_obj2.xCurrent)
 
-            self.ids.cw.degree = float(self.delta_d)
-
+            self.ids.cw.degree = float(self.delta_d) 
             self.trial_num += 1
 
-        print(self.fucked_up, 'fkcnt', self.fucked_up_cnt, self.trial_num, self.first_few, psi_obj1.xCurrent, psi_obj2.xCurrent)
+            # The buttons will be reactivated after 1.2s
+            Clock.schedule_once(self.reactivate_leftbutton, 0.5) 
+
+        print("nTrials: ", self.psi_nTrials, "current Trial:", self.trial_num, self.trial_num == int(self.psi_nTrials*2-1))
 
         ## change the colors of the screen
         self.change_col_setting()
 
-        # The buttons will be deactivated for 1.2s
-        Clock.schedule_once(self.reactivate_leftbutton, 1.2) 
 
     def reset(self):
         # Dump everything to the store
@@ -1081,26 +1115,15 @@ class TestScreenPM(Screen):
         # Trial number renewed
         self.trial_num = 0
 
-        list1 = [range(x, y) for x, y in zip([0, 12, 22, 32, 42], [7, 17, 27, 37, 45])]
-        psi_obj1_trials = [int(item) for sublist in list1 for item in sublist]
-        # the complete order = 0: psi_obj1 // 1:psi_obj2
-        self.psi_order = np.ones(50)
-        self.psi_order[psi_obj1_trials] = 0
-        self.psi_type = ['A', 'B']
+        self.leftbutton.disabled = False
+        self.rightbutton.disabled = False
+
         self.first_few = {}
         # Just not calling defaultdict...
         self.first_few['A'] = list()
         self.first_few['B'] = list()
 
         self.fucked_up_cnt = 0
-
-        # Psi marginal objects restart
-      #  global psi_obj1, psi_obj2
-      #  psi_obj1 = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = ntrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True)
-      #  psi_obj2 = copy.copy(psi_obj1)
-
-        # Stimulus is newly assigned from psi_obj 1(= 15 degrees)
-      #  self.ids.cw.degree = float(psi_obj1.xCurrent)
 
         # False reference moving to 55
         self.ids.cw.false_ref = 55
@@ -1117,13 +1140,6 @@ class OutcomeScreen(Screen):
     avg_performance = StringProperty('')
 
     def start_a_new_subject(self):
-        # Psi marginal objects restart
-        global psi_obj1, psi_obj2
-        psi_obj1 = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = ntrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True)
-        psi_obj2 = copy.copy(psi_obj1)
-
-        # Stimulus is newly assigned from psi_obj 1(= 15 degrees)
-        self.parent.ids.testsc_pm.handedness.degree = float(psi_obj1.xCurrent)
 
         # Reset the inputs of the first parameter input screen
         self.parent.ids.paramscone.pid_text_input.text = ''
@@ -1133,6 +1149,7 @@ class OutcomeScreen(Screen):
         self.parent.ids.paramscone.left_chkbox.active = False
         self.parent.ids.paramscone.right_chkbox.active = False
         self.parent.ids.paramscone.psi_chkbox.active = False
+        self.parent.ids.paramscone.psi_longer_chkbox.active = False 
         self.parent.ids.paramscone.adapst_chkbox.active = False
         # Reset the inputs of the second parameter input screen
         self.parent.ids.paramsc.flen_text_input.text = ''
@@ -1140,6 +1157,7 @@ class OutcomeScreen(Screen):
         self.parent.ids.paramsc.initd_text_input.text = ''
         self.parent.ids.paramsc.mprad_text_input.text = ''
         self.parent.current = "param_screen_one"
+
 
 class screen_manager(ScreenManager):
     pass

@@ -202,6 +202,7 @@
 	right_chkbox: rightchk
 	psi_chkbox: pm_chk
 	adapst_chkbox: as_chk
+	psi_longer_chkbox: pm_long_chk
 
     BoxLayout:
         orientation: "horizontal"
@@ -225,26 +226,38 @@
 			RelativeLayout:
 
 				PLabel:
-					text: "Psi-marginal"
-					pos_hint: {'center_x': 0.25, 'center_y': 0.5}
+					text: "Psi-marginal(S)"
+					pos_hint: {'center_x': 0.15, 'center_y': 0.5}
 
 				CheckBox:
 					id: pm_chk
 					color: 0, 0, 0, 1
 					group: "staircase"
-					pos_hint: {'center_x':.4, 'center_y': 0.5}
+					pos_hint: {'center_x':.3, 'center_y': 0.5}
 					size_hint_x: 0.1
 					on_active: root.Psimarginal_Yes(self.active)
 
 				PLabel:
+					text: "Psi-marginal(L)"
+					pos_hint: {'center_x': 0.45, 'center_y': 0.5}
+
+				CheckBox:
+					id: pm_long_chk
+					color: 0, 0, 0, 1
+					group: "staircase"
+					pos_hint: {'center_x':.6, 'center_y': 0.5}
+					size_hint_x: 0.1
+					on_active:root.Psimarginal_long_Yes(self.active)
+
+				PLabel:
 					text: "Adaptive-Staircase"
-					pos_hint: {'center_x': 0.6, 'center_y': 0.5}
+					pos_hint: {'center_x': 0.75, 'center_y': 0.5}
 
 				CheckBox:
 					id: as_chk
 					color: 0, 0, 0, 1
 					group: "staircase"
-					pos_hint: {'center_x':.8, 'center_y': .5}
+					pos_hint: {'center_x':.9, 'center_y': .5}
 					size_hint_x: .1
 					on_active: root.Adaptive_Yes(self.active)
 
