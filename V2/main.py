@@ -511,16 +511,31 @@ sigma = slope parameter
 StimLevels = delta angle
 '''
 
+## testing purpose
+## These parameter values would give the initial value of 30
 ntrials = 25
-mu = np.arange(0.1, 28.0, 0.1)
-mu = np.delete(mu, 49)
+mu = np.concatenate((np.arange(0.1, 15.1, 0.25), np.arange(15.5, 76, 0.5)))
+mu = np.delete(mu, 20)
 sigma = np.linspace(0.05, 1, 21)
-lapse = np.arange(0.0, 0.1, 0.01)
+lapse = np.arange(0, 0.1, 0.01) 
 guessRate = 0.5
-# 5.0 degrees deviation means the exact spot of the center of an index finger - skipped
-stimLevels = np.arange(0.1, 28.0, 0.1)
-stimLevels = np.delete(stimLevels, 49)
-#slopePrior = ('gamma', 2, 20)
+
+
+stimLevels = np.concatenate((np.arange(0.1, 15.1, 0.25), np.arange(15.5, 76, 0.5)))
+stimLevels = np.delete(stimLevels, 20)
+
+################
+
+#ntrials = 25
+#mu = np.arange(0.1, 28.0, 0.1)
+#mu = np.delete(mu, 49)
+#sigma = np.linspace(0.05, 1, 21)
+#lapse = np.arange(0.0, 0.1, 0.01)
+#guessRate = 0.5
+## 5.0 degrees deviation means the exact spot of the center of an index finger - skipped
+#stimLevels = np.arange(0.1, 28.0, 0.1)
+#stimLevels = np.delete(stimLevels, 49)
+##slopePrior = ('gamma', 2, 20)
 
 global psi_obj1, psi_obj2
 # The first psi_obj.xCurrent = 20.0
@@ -992,7 +1007,7 @@ class TestScreenPM(Screen):
                 list1 = [range(x, y) for x, y in zip([5, 17, 27, 37, 47 ], [12, 22, 32, 42, 50])]
                 psi_obj1_trials = [int(item) for sublist in list1 for item in sublist]
                 # Psi-order should be renewed
-                self.psi_order = np.ones(psi_obj1.nTrials*2-1)
+                self.psi_order = np.ones(psi_obj1.nTrials*2)
                 self.psi_order[psi_obj1_trials] = 0
                 ## Fucked up status turns on
                 self.fucked_up = True
@@ -1070,7 +1085,7 @@ class TestScreenPM(Screen):
             # Fucked up status checked
             self.fucked_up = not(self.fucked_up)
             # The buttons will be reactivated after 1.2s
-            Clock.schedule_once(self.reactivate_leftbutton, 0.5) 
+            Clock.schedule_once(self.reactivate_leftbutton, 2) 
 
         else:
             if self.psi_order[self.trial_num] == 0:
@@ -1098,7 +1113,7 @@ class TestScreenPM(Screen):
             self.trial_num += 1
 
             # The buttons will be reactivated after 1.2s
-            Clock.schedule_once(self.reactivate_leftbutton, 0.5) 
+            Clock.schedule_once(self.reactivate_leftbutton, 2) 
 
         print("nTrials: ", self.psi_nTrials, "current Trial:", self.trial_num, self.trial_num == int(self.psi_nTrials*2-1))
 
