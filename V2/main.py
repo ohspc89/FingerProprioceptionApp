@@ -514,15 +514,15 @@ StimLevels = delta angle
 ## testing purpose
 ## These parameter values would give the initial value of 30
 ntrials = 25
-mu = np.concatenate((np.arange(0.1, 15.1, 0.25), np.arange(15.5, 76, 0.5)))
-mu = np.delete(mu, 20)
+mu = np.concatenate((np.arange(0.0, 15.2, 0.2), np.arange(15.25, 67.25, 0.25)))
+mu = np.delete(mu, 25)
 sigma = np.linspace(0.05, 1, 21)
 lapse = np.arange(0, 0.1, 0.01) 
 guessRate = 0.5
 
 
-stimLevels = np.concatenate((np.arange(0.1, 15.1, 0.25), np.arange(15.5, 76, 0.5)))
-stimLevels = np.delete(stimLevels, 20)
+stimLevels = np.concatenate((np.arange(0.0, 15.2, 0.2), np.arange(15.25, 67.25, 0.25)))
+stimLevels = np.delete(stimLevels, 25)
 
 ################
 
@@ -887,14 +887,18 @@ class PMTrialScreen(Screen):
                 print(self.psi_nTrials)
                 the_popup = TrialPMc4Popup(title = "READ IT", size_hint = (None, None), size = (400, 400))
                 the_popup.argh.text = "Starting the actual test"
+                # Catch trials at trial_num = {12, 23, 34}
                 if self.psi_nTrials == 25:
-                    list_all = [range(x, y) for x, y in zip([0, 12, 22, 32, 42], [7, 17, 27, 37, 45])]
+                    list_a = [range(x, y) for x, y in zip([0, 13, 23, 34, 45], [7, 18, 28, 39, 48])]
+                    catch = [12, 28, 44]
                 else:
-                    list_all = [range(x, y) for x, y in zip([0, 12, 22, 32, 42, 50, 62, 72, 82, 92], [7, 17, 27, 37, 45, 57, 67, 77, 87, 95])]
+                    list_a = [range(x, y) for x, y in zip([0, 13, 23, 34, 45, 55, 66, 77, 87, 97], [7, 18, 28, 39, 50, 60, 71, 82, 92, 100])]
+                    catch = [12, 28, 44, 60, 76]
 
-                psi_order = np.ones(self.psi_nTrials*2)
-                psi_obj1_trials = [int(item) for sublist in list_all for item in sublist]
+                psi_order = np.ones(int(self.psi_nTrials*2 + np.ceil(self.psi_nTrials/10)))
+                psi_obj1_trials = [int(item) for sublist in list_a for item in sublist]
                 psi_order[psi_obj1_trials] = 0
+                psi_order[catch] = 2
                 self.parent.ids.testsc_pm.psi_order = psi_order
                 self.parent.ids.testsc_pm.psi_nTrials = self.psi_nTrials
 
@@ -921,6 +925,7 @@ class TestScreenPM(Screen):
     handedness = ObjectProperty(None)
     leftbutton = ObjectProperty()
     rightbutton = ObjectProperty()
+    trialcount = ObjectProperty()
     psi_order = ListProperty()
     psi_nTrials = NumericProperty()
     delta_d = NumericProperty()
@@ -950,7 +955,7 @@ class TestScreenPM(Screen):
         self.fucked_up_cnt = 0
 
     # changes the color of the buttons as well as the screen
-    def change_col_setting(self):
+    def change_col_setting(self, *largs):
         rgb_index = randrange(0, 3, 1)
         while rgb_index == self.rgbindex:
             rgb_index = randrange(0, 3, 1)
@@ -992,7 +997,9 @@ class TestScreenPM(Screen):
         self.right_or_wrong = int(rel_pos == correct_ans)
 
         # saving the response for the current psi direction: 'A' or 'B'
-        self.first_few[self.psi_type[int(self.psi_order[self.trial_num])]].append(self.right_or_wrong) 
+        # Don't do this for the catch trials
+        if int(self.psi_order[self.trial_num]) in [0,1]:
+            self.first_few[self.psi_type[int(self.psi_order[self.trial_num])]].append(self.right_or_wrong) 
 
         if self.fucked_up_cnt == 0:
             ## If 3 consecutive fails (= [0, 0, 0]) in the first 7 'A' trials,
@@ -1053,7 +1060,10 @@ class TestScreenPM(Screen):
                     self.reset()
 
         ## If you see no issue, go save your trial info!
-        self.subj_trial_info["_".join(["TRIAL", str(self.trial_num)])] = {'trial_num': self.trial_num, 'Psi_obj': self.psi_type[int(self.psi_order[self.trial_num])], 'Psi_stimulus(deg)': self.ids.cw.degree, 'Visual_stimulus(deg)': self.ids.cw.false_ref + self.ids.cw.degree_dir * self.ids.cw.degree, 'correct_ans': correct_ans, 'response': rel_pos, 'response_correct': self.right_or_wrong} 
+        if self.psi_order[self.trial_num] == 2:
+            self.subj_trial_info["_".join(["TRIAL", str(self.trial_num)])] = {'trial_num': self.trial_num, 'Visual_stimulus(deg)': self.ids.cw.false_ref + self.ids.cw.degree_dir*self.ids.cw.degree, 'correct_ans': correct_ans, 'response': rel_pos, 'response_correct': self.right_or_wrong}
+        else: 
+            self.subj_trial_info["_".join(["TRIAL", str(self.trial_num)])] = {'trial_num': self.trial_num, 'Psi_obj': self.psi_type[int(self.psi_order[self.trial_num])], 'Psi_stimulus(deg)': self.ids.cw.degree, 'Visual_stimulus(deg)': self.ids.cw.false_ref + self.ids.cw.degree_dir * self.ids.cw.degree, 'correct_ans': correct_ans, 'response': rel_pos, 'response_correct': self.right_or_wrong} 
 
     def reactivate_leftbutton(self, *largs):
         self.leftbutton.disabled = False
@@ -1065,11 +1075,17 @@ class TestScreenPM(Screen):
         self.leftbutton.disabled = True
         self.rightbutton.disabled = True
 
+        self.ids.cw.bg_color_before = (0, 0, 0, 1)
+        self.ids.cw.bg_color_after = (0, 0, 0, 1)
+
         self.save_trial_data(rel_pos)
 
         print('status?', self.trial_num)
+
         # If You are on the final trial, reset everything
-        if self.trial_num == 49: 
+        # Short version: self.psi_nTrials*2 + 3(catch trials)
+        # Long version: self.psi_nTrials*2 + 5(catchtrials) 
+        if self.trial_num == len(self.psi_order)-1:
             self.reset()
         elif self.fucked_up:
             if len(self.first_few['A']) == 0: 
@@ -1086,13 +1102,24 @@ class TestScreenPM(Screen):
             self.fucked_up = not(self.fucked_up)
             # The buttons will be reactivated after 1.2s
             Clock.schedule_once(self.reactivate_leftbutton, 2) 
-
         else:
-            if self.psi_order[self.trial_num] == 0:
+            if self.psi_order[self.trial_num] == 2:
+                if self.psi_order[self.trial_num + 1] == 1:
+                    self.delta_d = float(psi_obj2.xCurrent)
+                    self.ids.cw.false_ref = 45
+                    self.ids.cw.degree_dir = 1
+                elif self.psi_order[self.trial_num + 1] == 0:
+                    self.delta_d = float(psi_obj1.xCurrent)
+                    self.ids.cw.false_ref = 55
+                    self.ids.cw.degree_dir = -1
+                
+            elif self.psi_order[self.trial_num] == 0:
                 psi_obj1.addData(self.right_or_wrong)
                 while psi_obj1.xCurrent is None: # Wait until calculation is complete
                     pass
-                if self.psi_order[self.trial_num + 1] == 1:
+                if self.psi_order[self.trial_num + 1] == 2:
+                    self.delta_d = float(35)
+                elif self.psi_order[self.trial_num + 1] == 1:
                     self.delta_d = float(psi_obj2.xCurrent)
                     self.ids.cw.false_ref = 45
                     self.ids.cw.degree_dir = 1
@@ -1102,7 +1129,9 @@ class TestScreenPM(Screen):
                 psi_obj2.addData(self.right_or_wrong)
                 while psi_obj2.xCurrent is None:
                     pass
-                if self.psi_order[self.trial_num + 1] == 0:
+                if self.psi_order[self.trial_num + 1] == 2:
+                    self.delta_d = float(35)
+                elif self.psi_order[self.trial_num + 1] == 0:
                     self.delta_d = float(psi_obj1.xCurrent)
                     self.ids.cw.false_ref = 55
                     self.ids.cw.degree_dir = -1
@@ -1111,6 +1140,7 @@ class TestScreenPM(Screen):
 
             self.ids.cw.degree = float(self.delta_d) 
             self.trial_num += 1
+            self.trialcount.text = str(self.trial_num+1)
 
             # The buttons will be reactivated after 1.2s
             Clock.schedule_once(self.reactivate_leftbutton, 2) 
@@ -1118,7 +1148,7 @@ class TestScreenPM(Screen):
         print("nTrials: ", self.psi_nTrials, "current Trial:", self.trial_num, self.trial_num == int(self.psi_nTrials*2-1))
 
         ## change the colors of the screen
-        self.change_col_setting()
+        Clock.schedule_once(self.change_col_setting, 2)
 
 
     def reset(self):

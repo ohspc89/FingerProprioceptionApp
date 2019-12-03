@@ -468,6 +468,7 @@
 		CustomButton:
 			id: _backward
 			text: "Back"
+			font_size:40
 			pos_hint: {'x':0.72, 'y':0.1} if root.ids.cw.dir == 1 else {'x': 0.03, 'y':0.1}
 			on_press: 
 				root.manager.current = "param_screen_two"
@@ -504,6 +505,7 @@
 	backbutton: _backward
 	leftbutton: _more_left
 	rightbutton: _more_right
+	trialcount: _count
 
     FloatLayout:
 		id: layout
@@ -527,8 +529,9 @@
 				root.where_is_your_finger('right')
 
 		CustomButton:
-			id: _resume
-			text: "Resume"
+			id: _count
+			text: str(root.trial_num+1)
+			font_size:40
 			size_hint: 0.1, 0.1
 			pos_hint: {'x':0.72, 'y':0.1} if root.ids.cw.dir == 1 else {'x': 0.03, 'y':0.1}
 			disabled: False 
@@ -539,6 +542,7 @@
 		CustomButton:
 			id: _backward
 			text: "Back"
+			font_size:35
 			size_hint: 0.1, 0.1
 			pos_hint: {'x':0.85, 'y':0.1} if root.ids.cw.dir == 1 else {'x': 0.16, 'y':0.1}
 			disabled: False 
