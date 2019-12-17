@@ -900,6 +900,7 @@ class PMTrialScreen(Screen):
                 psi_order[psi_obj1_trials] = 0
                 psi_order[catch] = 2
                 self.parent.ids.testsc_pm.psi_order = psi_order
+                self.parent.ids.testsc_pm.catch = catch
                 self.parent.ids.testsc_pm.psi_nTrials = self.psi_nTrials
 
                 # Reset the trial number so that if revisted, it could start normally again.
@@ -927,6 +928,7 @@ class TestScreenPM(Screen):
     rightbutton = ObjectProperty()
     trialcount = ObjectProperty()
     psi_order = ListProperty()
+    catch = ListProperty()
     psi_nTrials = NumericProperty()
     delta_d = NumericProperty()
 
@@ -968,6 +970,8 @@ class TestScreenPM(Screen):
         self.rgbindex = rgb_index
 
     ## n is either a integer or a list; msg is a string
+    ## I assume it should be fine to not wait until the psi restart is completed,
+    ## because you would proceed with another psi object that's running fine...
     def clearance(self, n, msg):
         if type(n) is list:
             for i in range(n[0], n[1]):
@@ -976,12 +980,12 @@ class TestScreenPM(Screen):
             for i in range(n):
                 del self.subj_trial_info["_".join(["TRIAL", str(i)])]
         self.subj_trial_info["NOTE"] = msg
-        if self.fucked_up_cnt == 0 and n == 6:
+        if self.fucked_up_cnt == 0 and n == 2:
             global psi_obj1
-            psi_obj1 = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = ntrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True)
+            psi_obj1 = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = self.psi_nTrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True)
         elif self.fucked_up_cnt == 0 and n == 11:
             global psi_obj2
-            psi_obj2 = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = ntrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True) 
+            psi_obj2 = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = self.psi_nTrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True) 
 
     def save_trial_data(self, rel_pos): 
 
@@ -1002,20 +1006,23 @@ class TestScreenPM(Screen):
             self.first_few[self.psi_type[int(self.psi_order[self.trial_num])]].append(self.right_or_wrong) 
 
         if self.fucked_up_cnt == 0:
-            ## If 3 consecutive fails (= [0, 0, 0]) in the first 7 'A' trials,
-            ## erase all those 7 trials and begin anew with 'B' trials
-            if self.trial_num == 6 and any([self.first_few['A'][i], self.first_few['A'][i+1], self.first_few['A'][i+2]] == [0,0,0] for i in range(len(self.first_few['A']) - 2)):
-                the_popup = AreYouSurePopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
+            ## It is likely that if the user fails one of the first three trials, the user may never converge to the finger position.
+            ## Therefore, if a user fails in any of the first 3 'A' trials,
+            ## erase all those 3 trials and begin anew with 'B' trials
+            if self.trial_num == 2 and any([x == 0 for x in self.first_few['A'][0:3]]):
+                the_popup = AreYouSurePopup(title = "READ IT", size_hint = (None, None), size = (Window.width, 2*Window.height/3.0), pos_hint = {'x':0, 'y':0.4})
                 the_popup.open()
-                threading.Thread(target = self.clearance, args = (6, "The participant missed three consecutive trials in the first seven A trials")).start()
+                threading.Thread(target = self.clearance, args = (2, "The participant missed one of the first three A trials")).start()
                 # Start again from B
                 self.trial_num = 0
                 self.fucked_up_cnt += 1
-                list1 = [range(x, y) for x, y in zip([5, 17, 27, 37, 47 ], [12, 22, 32, 42, 50])]
-                psi_obj1_trials = [int(item) for sublist in list1 for item in sublist]
+                list_a = [range(x, y) for x, y in zip([5, 18, 29, 39, 50], [12, 23, 34, 44, 53])]
+                psi_obj1_trials = [int(item) for sublist in list_a for item in sublist]
                 # Psi-order should be renewed
-                self.psi_order = np.ones(psi_obj1.nTrials*2)
-                self.psi_order[psi_obj1_trials] = 0
+                psi_order = np.ones(int(self.psi_nTrials*2 + np.ceil(self.psi_nTrials/10)))
+                psi_order[psi_obj1_trials] = 0
+                psi_order[self.catch] = 2
+                self.psi_order = psi_order
                 ## Fucked up status turns on
                 self.fucked_up = True
                 # Previous record removed
@@ -1023,17 +1030,19 @@ class TestScreenPM(Screen):
 
             ## If you have passed the first 7 'A' trials, but make 3 consecutive fails in the first 5
             ## 'B' trials, then erase all those 5 'B' trials and continue with the 'A' trials
-            elif self.trial_num == 11 and any([self.first_few['B'][i], self.first_few['B'][i+1], self.first_few['B'][i+2]] == [0,0,0] for i in range(len(self.first_few['B']) - 2)):
-                the_popup = AreYouSurePopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
+            elif self.trial_num == 9 and any([x == 0 for x in self.first_few['B'][0:3]]):
+                the_popup = AreYouSurePopup(title = "READ IT", size_hint = (None, None), size = (Window.width, 2*Window.height/3.0), pos_hint = {'x':0, 'y':0.4})
                 the_popup.open()
-                threading.Thread(target = self.clearance, args = ([7,11], "The participant failed three times in a row during the first five B trials")).start()
+                threading.Thread(target = self.clearance, args = ([7,9], "The participant missed one of the first three B trials")).start()
                 # Return to the point where the participant was still okay.
                 self.trial_num = 7
                 self.fucked_up_cnt += 1
-                list1 = [range(x, y) for x, y in zip([7, 17, 27, 40],[12,22,32,43])]
-                psi_obj1_trials = [int(item) for sublist in list1 for item in sublist]
-                self.psi_order[7:50] = np.ones(43)
-                self.psi_order[psi_obj1_trials] = 0
+                list_a = [range(x, y) for x, y in zip([7, 18, 29, 45], [12, 23, 34, 48])]
+                psi_obj1_trials = [int(item) for sublist in list_a for item in sublist]
+                psi_order = np.concatenate((self.psi_order[0:7], np.ones(len(self.psi_order) - 7)))
+                psi_order[psi_obj1_trials] = 0
+                psi_order[self.catch] = 2
+                self.psi_order = psi_order
                 self.fucked_up = True
                 self.first_few['B'] = []
 
@@ -1041,23 +1050,15 @@ class TestScreenPM(Screen):
             ## If you have failed in the first 7 'A' trials and fail again in 'B' trials,
             ## erase all those 5 trials and just stop it...
             ## You better quit if you have reached here... there's just no point continuing the task 
-            if self.trial_num == 4 and any([self.first_few['B'][i], self.first_few['B'][i+1], self.first_few['B'][i+1]] == [0, 0, 0] for i in range(len(self.first_few['B'])-2)):
-                self.clearance(4, "The participant failed both in the first A and B sets so terminated")
+            if self.trial_num == 2 and any([x == 0 for x in self.first_few['B'][0:3]]):
+                self.clearance(2, "The participant failed both in the first A and B sets so terminated")
                 # YAY! BYE BYE!
                 self.reset()
             ## If you have failed in the first 7 'A' trials, passed the new 5 'B' trials, 
             ## and again failed on the following 7 'A' trials, you are done.
-            elif self.trial_num == 11 and any([self.first_few['A'][i], self.first_few['A'][i+1], self.first_few['A'][i+2]] == [0,0,0] for i in range(len(self.first_few['A']) - 2)):
-                self.clearance(11, "The participant kept failed on 'A' direction so terminated") 
+            elif self.trial_num == 7 and any([x == 0 for x in self.first_few['A'][0:3]]):
+                self.clearance(9, "The participant kept failed on 'A' direction so terminated") 
                 self.reset()
-            ## If you hav failed in the first 5 'B' trials, passed the following 5 'A' trials,
-            ## and again failed on the following 5 'B' trials, you are done.
-            elif self.trial_num == 16 and any([self.first_few['B'][i], self.first_few['B'][i+1], self.first_few['B'][i+2]] == [0,0,0] for i in range(len(self.first_few['B']) - 2)):
-                if len(self.first_few['A']) == 7:
-                    pass
-                else: 
-                    self.clearance(16, "The participant kept failed on 'B' direction so terminated")
-                    self.reset()
 
         ## If you see no issue, go save your trial info!
         if self.psi_order[self.trial_num] == 2:
@@ -1068,6 +1069,12 @@ class TestScreenPM(Screen):
     def reactivate_leftbutton(self, *largs):
         self.leftbutton.disabled = False
         self.rightbutton.disabled = False
+        self.trialcount.text = str(self.trial_num + 1)
+
+    def screen_blackout(self, *largs): 
+        self.ids.cw.bg_color_before = (0, 0, 0, 1)
+        self.ids.cw.bg_color_after = (0, 0, 0, 1)
+        self.trialcount.text = ""
 
     def where_is_your_finger(self, rel_pos):
 
@@ -1075,8 +1082,8 @@ class TestScreenPM(Screen):
         self.leftbutton.disabled = True
         self.rightbutton.disabled = True
 
-        self.ids.cw.bg_color_before = (0, 0, 0, 1)
-        self.ids.cw.bg_color_after = (0, 0, 0, 1)
+        # Screen blacks out and the count is momentarily wiped out too.
+        self.screen_blackout()
 
         self.save_trial_data(rel_pos)
 
@@ -1140,12 +1147,11 @@ class TestScreenPM(Screen):
 
             self.ids.cw.degree = float(self.delta_d) 
             self.trial_num += 1
-            self.trialcount.text = str(self.trial_num+1)
 
             # The buttons will be reactivated after 1.2s
             Clock.schedule_once(self.reactivate_leftbutton, 2) 
 
-        print("nTrials: ", self.psi_nTrials, "current Trial:", self.trial_num, self.trial_num == int(self.psi_nTrials*2-1))
+        print("nTrials: ", self.psi_nTrials, "first B trials:", self.first_few['B'], 'psi_order', self.psi_order)
 
         ## change the colors of the screen
         Clock.schedule_once(self.change_col_setting, 2)
