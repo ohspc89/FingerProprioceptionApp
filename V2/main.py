@@ -976,16 +976,22 @@ class TestScreenPM(Screen):
         if type(n) is list:
             for i in range(n[0], n[1]):
                 del self.subj_trial_info["_".join(["TRIAL", str(i)])]
+            if self.fucked_up_cnt == 0:
+                global psi_obj2
+                psi_obj2 = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = self.psi_nTrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True) 
+                while psi_obj2.xCurrent is None:
+                    pass 
         else: 
             for i in range(n):
                 del self.subj_trial_info["_".join(["TRIAL", str(i)])]
+            if self.fucked_up_cnt == 0:
+                global psi_obj1
+                psi_obj1 = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = self.psi_nTrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True)
+            elif self.fucked_up_cnt == 0 and n == 11:
+                while psi_obj1.xCurrent is None:
+                    pass
+
         self.subj_trial_info["NOTE"] = msg
-        if self.fucked_up_cnt == 0 and n == 2:
-            global psi_obj1
-            psi_obj1 = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = self.psi_nTrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True)
-        elif self.fucked_up_cnt == 0 and n == 11:
-            global psi_obj2
-            psi_obj2 = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = self.psi_nTrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True) 
 
     def save_trial_data(self, rel_pos): 
 
@@ -1005,7 +1011,34 @@ class TestScreenPM(Screen):
         if int(self.psi_order[self.trial_num]) in [0,1]:
             self.first_few[self.psi_type[int(self.psi_order[self.trial_num])]].append(self.right_or_wrong) 
 
-        if self.fucked_up_cnt == 0:
+
+        if self.fucked_up_cnt == 1:
+            ## If you have failed in the first 7 'A' trials and fail again in 'B' trials,
+            ## erase all those 5 trials and just stop it...
+            ## You better quit if you have reached here... there's just no point continuing the task 
+            if self.trial_num == 2 and any([x == 0 for x in self.first_few['B'][0:3]]):
+                self.clearance(2, "The participant failed both in the first A and B sets so terminated")
+                # YOU ARE FUCKED FOREVER
+                self.fucked_up_cnt += 1
+            ## If you have failed in the first 7 'A' trials, passed the new 5 'B' trials, 
+            ## and again failed on the following 7 'A' trials, you are done.
+            elif self.trial_num == 7 and any([x == 0 for x in self.first_few['A'][0:3]]):
+                self.clearance(7, "The participant kept failed on 'A' direction so terminated") 
+                self.fucked_up_cnt += 1 
+            ## If you passed the first 7 'A' trials, failed on 'B', passed another 5 'A' trials, and then
+            ## fail on B again, you are done.
+            elif self.trial_num == 15 and any([x == 0 for x in self.first_few['B'][0:3]]):
+                self.clearance(15, "The participant kept failed on 'B' direction so terminated")
+                self.fucked_up_cnt += 1
+
+            else:
+                ## If you see no issue, go save your trial info!
+                if self.psi_order[self.trial_num] == 2:
+                    self.subj_trial_info["_".join(["TRIAL", str(self.trial_num)])] = {'trial_num': self.trial_num, 'Visual_stimulus(deg)': self.ids.cw.false_ref + self.ids.cw.degree_dir*self.ids.cw.degree, 'correct_ans': correct_ans, 'response': rel_pos, 'response_correct': self.right_or_wrong}
+                else: 
+                    self.subj_trial_info["_".join(["TRIAL", str(self.trial_num)])] = {'trial_num': self.trial_num, 'Psi_obj': self.psi_type[int(self.psi_order[self.trial_num])], 'Psi_stimulus(deg)': self.ids.cw.degree, 'Visual_stimulus(deg)': self.ids.cw.false_ref + self.ids.cw.degree_dir * self.ids.cw.degree, 'correct_ans': correct_ans, 'response': rel_pos, 'response_correct': self.right_or_wrong} 
+
+        elif self.fucked_up_cnt == 0:
             ## It is likely that if the user fails one of the first three trials, the user may never converge to the finger position.
             ## Therefore, if a user fails in any of the first 3 'A' trials,
             ## erase all those 3 trials and begin anew with 'B' trials
@@ -1046,25 +1079,12 @@ class TestScreenPM(Screen):
                 self.fucked_up = True
                 self.first_few['B'] = []
 
-        elif self.fucked_up_cnt == 1:
-            ## If you have failed in the first 7 'A' trials and fail again in 'B' trials,
-            ## erase all those 5 trials and just stop it...
-            ## You better quit if you have reached here... there's just no point continuing the task 
-            if self.trial_num == 2 and any([x == 0 for x in self.first_few['B'][0:3]]):
-                self.clearance(2, "The participant failed both in the first A and B sets so terminated")
-                # YAY! BYE BYE!
-                self.reset()
-            ## If you have failed in the first 7 'A' trials, passed the new 5 'B' trials, 
-            ## and again failed on the following 7 'A' trials, you are done.
-            elif self.trial_num == 7 and any([x == 0 for x in self.first_few['A'][0:3]]):
-                self.clearance(9, "The participant kept failed on 'A' direction so terminated") 
-                self.reset()
+            ## If you see no issue, go save your trial info!
+            if self.psi_order[self.trial_num] == 2:
+                self.subj_trial_info["_".join(["TRIAL", str(self.trial_num)])] = {'trial_num': self.trial_num, 'Visual_stimulus(deg)': self.ids.cw.false_ref + self.ids.cw.degree_dir*self.ids.cw.degree, 'correct_ans': correct_ans, 'response': rel_pos, 'response_correct': self.right_or_wrong}
+            else: 
+                self.subj_trial_info["_".join(["TRIAL", str(self.trial_num)])] = {'trial_num': self.trial_num, 'Psi_obj': self.psi_type[int(self.psi_order[self.trial_num])], 'Psi_stimulus(deg)': self.ids.cw.degree, 'Visual_stimulus(deg)': self.ids.cw.false_ref + self.ids.cw.degree_dir * self.ids.cw.degree, 'correct_ans': correct_ans, 'response': rel_pos, 'response_correct': self.right_or_wrong} 
 
-        ## If you see no issue, go save your trial info!
-        if self.psi_order[self.trial_num] == 2:
-            self.subj_trial_info["_".join(["TRIAL", str(self.trial_num)])] = {'trial_num': self.trial_num, 'Visual_stimulus(deg)': self.ids.cw.false_ref + self.ids.cw.degree_dir*self.ids.cw.degree, 'correct_ans': correct_ans, 'response': rel_pos, 'response_correct': self.right_or_wrong}
-        else: 
-            self.subj_trial_info["_".join(["TRIAL", str(self.trial_num)])] = {'trial_num': self.trial_num, 'Psi_obj': self.psi_type[int(self.psi_order[self.trial_num])], 'Psi_stimulus(deg)': self.ids.cw.degree, 'Visual_stimulus(deg)': self.ids.cw.false_ref + self.ids.cw.degree_dir * self.ids.cw.degree, 'correct_ans': correct_ans, 'response': rel_pos, 'response_correct': self.right_or_wrong} 
 
     def reactivate_leftbutton(self, *largs):
         self.leftbutton.disabled = False
@@ -1092,7 +1112,7 @@ class TestScreenPM(Screen):
         # If You are on the final trial, reset everything
         # Short version: self.psi_nTrials*2 + 3(catch trials)
         # Long version: self.psi_nTrials*2 + 5(catchtrials) 
-        if self.trial_num == len(self.psi_order)-1:
+        if self.trial_num == len(self.psi_order)-1 or self.fucked_up_cnt == 2:
             self.reset()
         elif self.fucked_up:
             if len(self.first_few['A']) == 0: 
@@ -1192,6 +1212,8 @@ class OutcomeScreen(Screen):
 
     def start_a_new_subject(self):
 
+        # Prepare the trial count for the test screen(Psi-marginal)
+        self.parent.ids.testsc_pm.trialcount.text ="1"
         # Reset the inputs of the first parameter input screen
         self.parent.ids.paramscone.pid_text_input.text = ''
         self.parent.ids.paramscone.age_text_input.text = ''
