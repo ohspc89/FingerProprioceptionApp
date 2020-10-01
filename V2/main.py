@@ -866,7 +866,8 @@ class TestScreenAS(Screen):
 class TrialScreen(Screen):
 
     handedness = ObjectProperty(None)
-    psi_nTrials = NumericProperty(None)
+    psi_nTrials = NumericProperty(None) 
+    delta_d = NumericProperty()
 
     def __init__(self, **kwargs):
         super(TrialScreen, self).__init__(**kwargs)
