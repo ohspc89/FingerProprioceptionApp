@@ -2,6 +2,8 @@ import math, time, copy
 import numpy as np
 from random import randrange
 from kivy.uix.screenmanager import Screen, ScreenManager, FadeTransition
+from kivy.uix.dropdown import DropDown
+from kivy.uix.button import Button
 from kivy.core.window import Window
 from kivy.app import App
 from kivy.clock import Clock
@@ -568,33 +570,71 @@ class GotoASPopup(Popup):
 class AreYouSurePopup(Popup):
     pass
 
+class CustomDropDown(DropDown):
+    pass
+
 class ParamInputScreenOne(Screen):
 
     gender = ObjectProperty(None)
     staircase = ObjectProperty(None)
     handed_chk = ObjectProperty(False)
+    dd_btn = ObjectProperty(None)
+
+    def __init__(self, *args, **kwargs):
+        super(ParamInputScreenOne, self).__init__(*args, **kwargs)
+
+        # So we make an instance of the class: CustomDropDown
+        self.drop_down = CustomDropDown()
+
+        # These are the options
+        notes = ["Psi-Marginal", "Randomized", "Staircase"]
+        for note in notes:
+            btn = Button(text = '%r' % note, size_hint_y=None, height=22)
+
+            # each button has a callback that will call the select() method on the dropdown
+            # pass the text of the button as the data of the selection
+            btn.bind(on_release = lambda btn: self.drop_down.select(btn.text))
+
+            # add the button inside the dropdown
+            self.drop_down.add_widget(btn)
+
+        self.drop_down.bind(on_release = self.drop_down.open)
+        self.drop_down.bind(on_select = lambda instance, x:self.make_staircase_selection(x)) 
+
+    def make_staircase_selection(self, x):
+
+        psi_popup = ParamPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
+        setattr(self.dd_btn, 'text', x)
+        self.staircase = x.strip("\'")
+        if self.staircase != 'Staircase':
+            self.parent.ids.paramsc.initd_text_input.disabled = True
+        if self.staircase == 'Psi-Marginal':
+            self.psi_nTrials = 25
+            self.parent.ids.trialsc.psi_nTrials = self.psi_nTrials
+            self.t = threading.Thread(target = self.initialize_psi, args = [25])
+            self.t.start() 
+        psi_popup.argh.text = "%r selected" % self.staircase
+        psi_popup.open() 
+
 
     # Popup window to check if everything is saved properly
     def show_popup(self):
 
         the_popup = ParamPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
 
-        # Check if any of the parameter inputs is missing!
-        missing_any = any([self.pid_text_input.text == "", self.age_text_input.text == "", self.gender == None, self.staircase == None, self.handed_chk == False])
-        psi_selected = (self.staircase == 'Psi-Marginal')
-        if missing_any or psi_selected:
-            if missing_any:
-                the_popup.argh.text = "Missing Values"
+        # Check if any of the parameter inputs is missing!  
+        if hasattr(self, 't'):
+            print(self.t.isAlive())
+            if self.t.isAlive():
+                the_popup.argh.text = 'Threading in Progress'
                 the_popup.open()
-            elif psi_selected:
-                self.parent.ids.trialsc.psi_nTrials = self.psi_nTrials
-                if self.t.isAlive():
-                    the_popup.argh.text = "Preparing the Algorithm"
-                    the_popup.open()
-                else:
-                    self.parent.ids.testsc_pm.delta_d = float(psi_obj1.xCurrent)
+            else:
+                self.parent.ids.testsc_pm.delta_d = float(psi_obj1.xCurrent)
 
-        if not missing_any:
+        if any([self.pid_text_input.text == "", self.age_text_input.text == "", self.gender == None, self.staircase == None, self.handed_chk == False]):
+            the_popup.argh.text = "Missing Values"
+            the_popup.open()
+        else: 
             global subid
             subid = "_".join(["SUBJ", self.pid_text_input.text])
             global subj_info
@@ -693,7 +733,8 @@ class ParamInputScreenTwo(Screen):
         the_popup = ParamPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
 
         # Check if any of the parameter inputs is missing!
-        if any([self.flen_text_input.text == "", self.fwid_text_input.text == "", self.initd_text_input.text == "", self.mprad_text_input.text == ""]):
+        if any([self.flen_text_input.text == "", self.fwid_text_input.text == "", 
+            (self.initd_text_input.disabled == False and self.initd_text_input.text == ""), self.mprad_text_input.text == ""]):
             the_popup.argh.text = "Missing Values"
             the_popup.open()
         else:
@@ -918,8 +959,10 @@ class TrialScreen(Screen):
                     the_popup = TrialPMc4Popup(title = "READ IT", size_hint = (None, None), size = (400, 400))
                     # Catch trials at trial_num = {12, 23, 34}
                     if self.psi_nTrials == 25:
-                        list_a = [range(x, y) for x, y in zip([0, 13, 23, 34, 45], [7, 18, 28, 39, 48])]
-                        catch = [12, 28, 44]
+                        list_a = [range(x, y) for x, y in zip([0, 21, 32,43],[10, 26, 37,48])]
+                        catch = [20,31,42]
+                        #list_a = [range(x, y) for x, y in zip([0, 13, 23, 34, 45], [7, 18, 28, 39, 48])]
+                        #catch = [12, 28, 44]
                     else:
                         list_a = [range(x, y) for x, y in zip([0, 13, 23, 34, 45, 55, 66, 77, 87, 97], [7, 18, 28, 39, 50, 60, 71, 82, 92, 100])]
                         catch = [12, 28, 44, 60, 76]
@@ -1417,6 +1460,7 @@ class OutcomeScreen(Screen):
         self.parent.ids.paramscone.left_chkbox.active = False
         self.parent.ids.paramscone.right_chkbox.active = False
         self.parent.ids.paramscone.psi_chkbox.active = False
+        self.parent.ids.paramscone.dd_btn.text = 'Press here'
         #self.parent.ids.paramscone.psi_longer_chkbox.active = False 
         self.parent.ids.paramscone.rn_chkbox.active = False
         self.parent.ids.paramscone.adapst_chkbox.active = False
