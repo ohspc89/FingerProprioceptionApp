@@ -501,6 +501,7 @@ else:
     store = JsonStore(".".join([timestamp, 'json']))
 
 # Prepare dictionaries to save information
+global subj_info
 subj_info = {}
 subj_anth = {}
 subj_trial_info = {}
@@ -587,7 +588,7 @@ class ParamInputScreenOne(Screen):
         self.drop_down = CustomDropDown()
 
         # These are the options
-        notes = ["Psi-Marginal", "Randomized", "Staircase"]
+        notes = ["Psi-Marginal_7", "Psi-Marginal_10", "Psi-M(A)", "Psi-M(B)", "Randomized", "Staircase"]
         for note in notes:
             btn = Button(text = '%r' % note, size_hint_y=None, height=22)
 
@@ -608,7 +609,7 @@ class ParamInputScreenOne(Screen):
         self.staircase = x.strip("\'")
         if self.staircase != 'Staircase':
             self.parent.ids.paramsc.initd_text_input.disabled = True
-        if self.staircase == 'Psi-Marginal':
+        if self.staircase in ['Psi-Marginal_7', 'Psi-Marginal_10', 'Psi-M(A)', 'Psi-M(B)']:
             self.psi_nTrials = 25
             self.parent.ids.trialsc.psi_nTrials = self.psi_nTrials
             self.t = threading.Thread(target = self.initialize_psi, args = [25])
@@ -616,31 +617,42 @@ class ParamInputScreenOne(Screen):
         psi_popup.argh.text = "%r selected" % self.staircase
         psi_popup.open() 
 
-
     # Popup window to check if everything is saved properly
     def show_popup(self):
 
         the_popup = ParamPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
+        global subid
 
         # Check if any of the parameter inputs is missing!  
         if hasattr(self, 't'):
-            print(self.t.isAlive())
+            #print(self.t.isAlive())
             if self.t.isAlive():
                 the_popup.argh.text = 'Threading in Progress'
                 the_popup.open()
             else:
-                self.parent.ids.testsc_pm.delta_d = float(psi_obj1.xCurrent)
+                if any([self.pid_text_input.text == "", self.age_text_input.text == "", self.gender == None, self.staircase == None, self.handed_chk == False]):
+                    the_popup.argh.text = "Missing Values"
+                    the_popup.open()
+                else:
+                    self.parent.ids.testsc_pm.delta_d = float(psi_obj1.xCurrent)
+                    if self.staircase == 'Psi-M(B)':
+                        self.parent.ids.testsc_pm.handedness.degree_dir = 1
+                        self.parent.ids.trialsc.handedness.degree_dir = 1
+                    else:
+                        self.parent.ids.testsc_pm.handedness.degree_dir = -1
+                        self.parent.ids.trialsc.handedness.degree_dir = -1
+                    subid = "_".join(["SUBJ", self.pid_text_input.text])
+                    subj_info = {'age' : self.age_text_input.text, 'gender' : self.gender, 'right_used' : self.ids.rightchk.active, 'Staircase used': self.staircase}
+                    self.parent.current = "param_screen_two"
 
-        if any([self.pid_text_input.text == "", self.age_text_input.text == "", self.gender == None, self.staircase == None, self.handed_chk == False]):
-            the_popup.argh.text = "Missing Values"
-            the_popup.open()
         else: 
-            global subid
-            subid = "_".join(["SUBJ", self.pid_text_input.text])
-            global subj_info
-            subj_info = {'age' : self.age_text_input.text, 'gender' : self.gender, 'right_used' : self.ids.rightchk.active, 'Staircase used': self.staircase}
-            self.parent.current = "param_screen_two"
-            # debugging...
+            if any([self.pid_text_input.text == "", self.age_text_input.text == "", self.gender == None, self.staircase == None, self.handed_chk == False]):
+                the_popup.argh.text = "Missing Values"
+                the_popup.open()
+            else:
+                subid = "_".join(["SUBJ", self.pid_text_input.text])
+                subj_info = {'age' : self.age_text_input.text, 'gender' : self.gender, 'right_used' : self.ids.rightchk.active, 'Staircase used': self.staircase}
+                self.parent.current = "param_screen_two"
 
     def initialize_psi(self, ntrial):
         global psi_obj1, psi_obj2
@@ -659,20 +671,6 @@ class ParamInputScreenOne(Screen):
             self.parent.ids.paramsc.initd_text_input.text = 'N/A'
             psi_popup.argh.text = "Psi-Marginal(Short) selected"
             psi_popup.open() 
-
-# No Longer Using this Function
-#    def Psimarginal_long_Yes(self, state):
-#        # A popup window to make sure that Psi-marginal is chosen
-#        psi_popup = ParamPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
-#
-#        if state:
-#            self.psi_nTrials = 50
-#            self.t = threading.Thread(target = self.initialize_psi, args = [50])
-#            self.t.start()
-#            self.staircase = "Psi-Marginal"
-#            self.parent.ids.paramsc.initd_text_input.text = 'N/A'
-#            psi_popup.argh.text = "Psi-Marginal(Long) selected"
-#            psi_popup.open()
 
     # Presenting randomized set stimuli to test if psi-marginal is restricting the individuals in their choices.
     def Randomized_Yes(self, state):
@@ -741,7 +739,7 @@ class ParamInputScreenTwo(Screen):
             global subj_anth
             subj_anth = {'flen' : self.flen_text_input.text, 'fwid' : self.fwid_text_input.text, 'init_step' : self.initd_text_input.text, 'MPJR' : self.mprad_text_input.text}
 
-            if self.parent.ids.paramscone.staircase == 'Psi-Marginal':
+            if self.parent.ids.paramscone.staircase in ['Psi-Marginal_7', 'Psi-Marginal_10', 'Psi-M(A)', 'Psi-M(B)']:
                 # Give the mp joint radius input to draw the test screen display
                 # This shall also be done for the trial PM screen display
                 self.parent.ids.testsc_pm.handedness.mprad = self.mprad_text_input.text
@@ -909,6 +907,7 @@ class TrialScreen(Screen):
     handedness = ObjectProperty(None)
     psi_nTrials = NumericProperty(None) 
     delta_d = NumericProperty()
+    degree_dir = NumericProperty()
 
     def __init__(self, **kwargs):
         super(TrialScreen, self).__init__(**kwargs)
@@ -955,25 +954,37 @@ class TrialScreen(Screen):
                 self.ids.cw.degree = 10.0
             if self.trial_num == 4: 
                 # If the staircase choice was 'Psi-Marginal', then proceed to the TestScreenPM
-                if self.parent.ids.paramscone.staircase == 'Psi-Marginal':
+                if self.parent.ids.paramscone.staircase in ['Psi-Marginal_7', 'Psi-Marginal_10', 'Psi-M(A)', 'Psi-M(B)']:
                     the_popup = TrialPMc4Popup(title = "READ IT", size_hint = (None, None), size = (400, 400))
                     # Catch trials at trial_num = {12, 23, 34}
-                    if self.psi_nTrials == 25:
-                        list_a = [range(x, y) for x, y in zip([0, 21, 32,43],[10, 26, 37,48])]
-                        catch = [20,31,42]
-                        #list_a = [range(x, y) for x, y in zip([0, 13, 23, 34, 45], [7, 18, 28, 39, 48])]
-                        #catch = [12, 28, 44]
-                    else:
-                        list_a = [range(x, y) for x, y in zip([0, 13, 23, 34, 45, 55, 66, 77, 87, 97], [7, 18, 28, 39, 50, 60, 71, 82, 92, 100])]
-                        catch = [12, 28, 44, 60, 76]
+                    #if self.psi_nTrials == 25:
+                    if self.parent.ids.testsc_pm.fucked_up_cnt > 0:
+                        pass
 
-                    psi_order = np.ones(int(self.psi_nTrials*2 + np.ceil(self.psi_nTrials/10)))
-                    psi_obj1_trials = [int(item) for sublist in list_a for item in sublist]
-                    psi_order[psi_obj1_trials] = 0
-                    psi_order[catch] = 2
-                    self.parent.ids.testsc_pm.psi_order = psi_order
-                    self.parent.ids.testsc_pm.catch = catch
-                    self.parent.ids.testsc_pm.psi_nTrials = self.psi_nTrials 
+                    else: 
+                        if self.parent.ids.paramscone.staircase == 'Psi-Marginal_10':
+                            list_a = [range(x, y) for x, y in zip([0, 21, 32,43],[10, 26, 37,48])]
+                            catch = [20,31,42]
+                        elif self.parent.ids.paramscone.staircase == 'Psi-Marginal_7':
+                            list_a = [range(x, y) for x, y in zip([0, 13, 23, 34, 45], [7, 18, 28, 39, 48])]
+                            catch = [12, 28, 44]
+
+                        elif self.parent.ids.paramscone.staircase == 'Psi-M(A)':        #A 25 times first
+                            list_a = [range(x, y) for x, y in zip([0, 11],[10,26])]
+                            catch = [10, 31, 42] 
+                        else:                                                           #B 25 times first
+                            list_a = [range(x, y) for x, y in zip([26,37,43],[36,42,53])]
+                            catch = [10, 36, 42]
+
+                        psi_order = np.ones(int(self.psi_nTrials*2 + np.ceil(self.psi_nTrials/10)))
+                        psi_obj1_trials = [int(item) for sublist in list_a for item in sublist]
+                        psi_order[psi_obj1_trials] = 0
+                        psi_order[catch] = 2
+                        self.parent.ids.testsc_pm.psi_order = psi_order
+                        self.parent.ids.testsc_pm.catch = catch
+                        self.parent.ids.testsc_pm.psi_nTrials = self.psi_nTrials 
+                        # Tell when the B trials (Mid to Index) start
+                        self.parent.ids.testsc_pm.fb_tr_n = int(np.where(psi_order==1)[0][0])
 
                 # If the staircase choice was 'Randomized', then proceed to the TestScreenRN
                 elif self.parent.ids.paramscone.staircase == 'Randomized':
@@ -982,6 +993,8 @@ class TrialScreen(Screen):
                 # If the staircase choice was 'Adaptive-Staircase', then proceed to the TestScreenAS
                 elif self.parent.ids.paramscone.staircase == 'Adaptive-Staircase':
                     the_popup = GotoASPopup(title = 'READ IT', size_hint = (None, None), size = (400, 400))
+                    self.parent.ids.testsc_pms.psi_order = [0]*25
+                    self.parent.ids.testsc_pms.psi_nTrials = self.psi_nTrials
             
                 # Reset the trial number so that if revisted, it could start normally again.
                 self.trial_num = 0
@@ -1012,7 +1025,8 @@ class TestScreenPM(Screen):
     catch = ListProperty()
     psi_nTrials = NumericProperty()
     delta_d = NumericProperty()
-
+    degree_dir = NumericProperty()
+    fb_tr_n = NumericProperty()
 
     def __init__(self, **kwargs):
         super(TestScreenPM, self).__init__(**kwargs)
@@ -1094,22 +1108,22 @@ class TestScreenPM(Screen):
 
 
         if self.fucked_up_cnt == 1:
-            ## If you have failed in the first 7 'A' trials and fail again in 'B' trials,
-            ## erase all those 5 trials and just stop it...
+            ## If you have failed in the first 'A' block and fail again in the first 'B' block,
+            ## erase all trial info and just stop it...
             ## You better quit if you have reached here... there's just no point continuing the task 
             if self.trial_num == 2 and any([x == 0 for x in self.first_few['B'][0:3]]):
                 self.clearance(2, "The participant failed both in the first A and B sets so terminated")
                 # YOU ARE FUCKED FOREVER
                 self.fucked_up_cnt += 1
-            ## If you have failed in the first 7 'A' trials, passed the new 5 'B' trials, 
-            ## and again failed on the following 7 'A' trials, you are done.
-            elif self.trial_num == 7 and any([x == 0 for x in self.first_few['A'][0:3]]):
-                self.clearance(7, "The participant kept failed on 'A' direction so terminated") 
+            ## If you have failed in the first 'A' block, passed the new 'B' block, 
+            ## and again failed on the following 'A' block, you are done.
+            elif self.trial_num == 5 and any([x == 0 for x in self.first_few['A'][0:3]]):
+                self.clearance(5, "The participant kept failed on 'A' direction so terminated") 
                 self.fucked_up_cnt += 1 
-            ## If you passed the first 7 'A' trials, failed on 'B', passed another 5 'A' trials, and then
+            ## If you passed the first 'A' block, failed on 'B', passed another 'A' block, and then
             ## fail on B again, you are done.
-            elif self.trial_num == 15 and any([x == 0 for x in self.first_few['B'][0:3]]):
-                self.clearance(15, "The participant kept failed on 'B' direction so terminated")
+            elif (self.trial_num in [15, 17])  and any([x == 0 for x in self.first_few['B'][0:3]]):
+                self.clearance(self.trial_num, "The participant kept failed on 'B' direction so terminated")
                 self.fucked_up_cnt += 1
 
             else:
@@ -1130,7 +1144,10 @@ class TestScreenPM(Screen):
                 # Start again from B
                 self.trial_num = 0
                 self.fucked_up_cnt += 1
-                list_a = [range(x, y) for x, y in zip([5, 18, 29, 39, 50], [12, 23, 34, 44, 53])]
+                if self.parent.ids.paramscone.staircase == 'Psi-Marginal_7':
+                    list_a = [range(x, y) for x, y in zip([5, 18, 29, 39, 50], [12, 23, 34, 44, 53])]
+                elif self.parent.ids.paramscone.staircase == 'Psi-Marginal_10':
+                    list_a = [range(x, y) for x, y in zip([10, 26, 37, 48], [20, 31, 42, 53])] 
                 psi_obj1_trials = [int(item) for sublist in list_a for item in sublist]
                 # Psi-order should be renewed
                 psi_order = np.ones(int(self.psi_nTrials*2 + np.ceil(self.psi_nTrials/10)))
@@ -1142,18 +1159,23 @@ class TestScreenPM(Screen):
                 # Previous record removed
                 self.first_few['A'] = []
 
-            ## If you have passed the first 7 'A' trials, but make 3 consecutive fails in the first 5
+            ## If you have passed the first 'A' trials, but make 3 consecutive fails in the first 3
             ## 'B' trials, then erase all those 5 'B' trials and continue with the 'A' trials
-            elif self.trial_num == 9 and any([x == 0 for x in self.first_few['B'][0:3]]):
+            elif self.trial_num == (self.fb_tr_n+2) and any([x == 0 for x in self.first_few['B'][0:3]]):
                 the_popup = AreYouSurePopup(title = "READ IT", size_hint = (None, None), size = (Window.width, 2*Window.height/3.0), pos_hint = {'x':0, 'y':0.4})
                 the_popup.open()
-                threading.Thread(target = self.clearance, args = ([7,9], "The participant missed one of the first three B trials")).start()
+                threading.Thread(target = self.clearance, args = ([self.fb_tr_n,self.fb_tr_n+2], "The participant missed one of the first three B trials")).start()
                 # Return to the point where the participant was still okay.
-                self.trial_num = 7
+                self.trial_num = self.fb_tr_n
                 self.fucked_up_cnt += 1
-                list_a = [range(x, y) for x, y in zip([7, 18, 29, 45], [12, 23, 34, 48])]
-                psi_obj1_trials = [int(item) for sublist in list_a for item in sublist]
-                psi_order = np.concatenate((self.psi_order[0:7], np.ones(len(self.psi_order) - 7)))
+                if self.parent.ids.paramscone.staircase == 'Psi-Marginal_7':
+                    list_a = [range(x, y) for x, y in zip([7, 18, 29, 45], [12, 23, 34, 48])]
+                    psi_obj1_trials = [int(item) for sublist in list_a for item in sublist]
+                    psi_order = np.concatenate((self.psi_order[0:7], np.ones(len(self.psi_order) - 7)))
+                elif self.parent.ids.paramscone.staircase == 'Psi-Marginal_10':
+                    list_a = [range(x, y) for x, y in zip([10,26,43],[15,31,48])]
+                    psi_obj1_trials = [int(item) for sublist in list_a for item in sublist]
+                    psi_order = np.concatenate((self.psi_order[0:10], np.ones(len(self.psi_order) - 10)))
                 psi_order[psi_obj1_trials] = 0
                 psi_order[self.catch] = 2
                 self.psi_order = psi_order
@@ -1459,11 +1481,11 @@ class OutcomeScreen(Screen):
         self.parent.ids.paramscone.female_chkbox.active = False
         self.parent.ids.paramscone.left_chkbox.active = False
         self.parent.ids.paramscone.right_chkbox.active = False
-        self.parent.ids.paramscone.psi_chkbox.active = False
+        #self.parent.ids.paramscone.psi_chkbox.active = False
         self.parent.ids.paramscone.dd_btn.text = 'Press here'
         #self.parent.ids.paramscone.psi_longer_chkbox.active = False 
-        self.parent.ids.paramscone.rn_chkbox.active = False
-        self.parent.ids.paramscone.adapst_chkbox.active = False
+        #self.parent.ids.paramscone.rn_chkbox.active = False
+        #self.parent.ids.paramscone.adapst_chkbox.active = False
         # Reset the inputs of the second parameter input screen
         self.parent.ids.paramsc.flen_text_input.text = ''
         self.parent.ids.paramsc.fwid_text_input.text = ''

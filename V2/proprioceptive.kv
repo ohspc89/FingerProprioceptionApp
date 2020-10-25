@@ -169,7 +169,7 @@
 		id: gotoas
 		color: 0, 0, 1, 1
 		on_press:
-			app.root.current = "test_screen_AS"
+			app.root.current = "test_screen_PMS"
 			root.dismiss()
 
 <GotoRNPopup>:
@@ -222,9 +222,9 @@
 	female_chkbox: femalechk
 	left_chkbox: leftchk
 	right_chkbox: rightchk
-	psi_chkbox: pm_chk
-	adapst_chkbox: as_chk
-	rn_chkbox: rn_chk
+	#psi_chkbox: pm_chk
+	#adapst_chkbox: as_chk
+	#rn_chkbox: rn_chk
 	dd_btn: btn_ddID
 	bottom_layout: bottomLayoutID
 
@@ -250,51 +250,51 @@
 			RelativeLayout:
 				id: bottomLayoutID
 
-				PLabel:
-					text: "Psi-marginal(S)"
-					pos_hint: {'center_x': 0.15, 'center_y': 0.5}
+				#PLabel:
+				#	text: "Psi-marginal(S)"
+				#	pos_hint: {'center_x': 0.15, 'center_y': 0.5}
 
-				CheckBox:
-					id: pm_chk
-					color: 0, 0, 0, 1
-					group: "staircase"
-					pos_hint: {'center_x':.3, 'center_y': 0.5}
-					size_hint_x: 0.1
-					on_active: root.Psimarginal_Yes(self.active)
+				#CheckBox:
+				#	id: pm_chk
+				#	color: 0, 0, 0, 1
+				#	group: "staircase"
+				#	pos_hint: {'center_x':.3, 'center_y': 0.5}
+				#	size_hint_x: 0.1
+				#	on_active: root.Psimarginal_Yes(self.active)
 
-				PLabel:
-					#text: "Psi-marginal(L)"	# No longer using it
-					text: "Randomized"
-					pos_hint: {'center_x': 0.45, 'center_y': 0.5}
+				#PLabel:
+				#	#text: "Psi-marginal(L)"	# No longer using it
+				#	text: "Randomized"
+				#	pos_hint: {'center_x': 0.45, 'center_y': 0.5}
 
-				CheckBox:
-					#id: pm_long_chk
-					id: rn_chk
-					color: 0, 0, 0, 1
-					group: "staircase"
-					pos_hint: {'center_x':.6, 'center_y': 0.5}
-					size_hint_x: 0.1
-					#on_active:root.Psimarginal_long_Yes(self.active)
-					on_active:root.Randomized_Yes(self.active)
+				#CheckBox:
+				#	#id: pm_long_chk
+				#	id: rn_chk
+				#	color: 0, 0, 0, 1
+				#	group: "staircase"
+				#	pos_hint: {'center_x':.6, 'center_y': 0.5}
+				#	size_hint_x: 0.1
+				#	#on_active:root.Psimarginal_long_Yes(self.active)
+				#	on_active:root.Randomized_Yes(self.active)
 
-				PLabel:
-					text: "Adaptive-Staircase"
-					pos_hint: {'center_x': 0.75, 'center_y': 0.5}
+				#PLabel:
+				#	text: "Adaptive-Staircase"
+				#	pos_hint: {'center_x': 0.75, 'center_y': 0.5}
 
-				CheckBox:
-					id: as_chk
-					color: 0, 0, 0, 1
-					group: "staircase"
-					pos_hint: {'center_x':.9, 'center_y': .5}
-					size_hint_x: .1
-					on_active: root.Adaptive_Yes(self.active)
+				#CheckBox:
+				#	id: as_chk
+				#	color: 0, 0, 0, 1
+				#	group: "staircase"
+				#	pos_hint: {'center_x':.9, 'center_y': .5}
+				#	size_hint_x: .1
+				#	on_active: root.Adaptive_Yes(self.active)
 
 				Button:
 					id: btn_ddID
 					text:"Press this"
-					pos_hint:{'center_x':0.75, 'center_y':.5}
-					size_hint_x: 0.2
-					size_hint_y: 0.15
+					pos_hint:{'center_x':0.5, 'center_y':.5}
+					size_hint_x: 0.8
+					size_hint_y: 0.2
 					on_release: root.drop_down.open(self)
 
 
@@ -524,6 +524,9 @@
             # This bottom left corner position
             pos: (root.x + cm(self.topspace/2.0), root.center_y - math.sin(math.radians(self.theta)) * cm(self.diag) + math.sin(math.radians(90 - self.theta)) * cm(self.mprad/10.0 + 0.25))
 
+			# Initial direction
+			degree_dir: float(root.degree_dir)
+
             # Initial tilt
             degree: float(root.delta_d)
 
@@ -600,6 +603,9 @@
 
             # This bottom left corner position
             pos: (root.x + cm(self.topspace/2.0), root.center_y - math.sin(math.radians(self.theta)) * cm(self.diag) + math.sin(math.radians(90 - self.theta)) * cm(self.mprad/10.0 + 0.25))
+
+			# Initial direction
+			degree_dir: float(root.degree_dir)
 
             # Initial tilt
             degree: float(root.delta_d)
