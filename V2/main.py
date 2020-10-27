@@ -501,7 +501,6 @@ else:
     store = JsonStore(".".join([timestamp, 'json']))
 
 # Prepare dictionaries to save information
-global subj_info
 subj_info = {}
 subj_anth = {}
 subj_trial_info = {}
@@ -622,6 +621,7 @@ class ParamInputScreenOne(Screen):
 
         the_popup = ParamPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
         global subid
+        global subj_info
 
         # Check if any of the parameter inputs is missing!  
         if hasattr(self, 't'):
