@@ -14,9 +14,11 @@ from kivy.storage.jsonstore import JsonStore
 from kivy.uix.checkbox import CheckBox
 from kivy import platform
 from kivy.graphics.stencil_instructions import *
+from kivy.config import Config
 import threading
 
-Window.fullscreen = 'auto'
+#Window.fullscreen = 'auto'
+#Config.set('graphics', 'fullscreen', 1)
 
 def cartesian(arrays, out=None):
     """Generate a cartesian product of input arrays.
@@ -108,21 +110,21 @@ def pf(parameters, psyfun='cGauss'):
         gamma = 0.2
         llambda = 0.04
     # Psychometric function
-    ones = np.ones(np.shape(mu))
+    ones = np.ones(np.shape(mu), dtype='f4')
     if psyfun == 'cGauss':
         # F(x; mu, sigma) = Normcdf(mu, sigma) = 1/2 * erfc(-sigma * (x-mu) /sqrt(2))
         z = np.divide(np.subtract(x, mu), sigma)
         p = 0.5 * np.array([math.erfc(-zi / np.sqrt(2)) for zi in z])
     elif psyfun == 'Gumbel':
         # F(x; mu, sigma) = 1 - exp(-10^(sigma(x-mu)))
-        p = ones - np.exp(-np.power((np.multiply(ones, 10.0)), (np.multiply(sigma, (np.subtract(x, mu))))))
+        p = ones - np.exp(-np.power((np.multiply(ones, 10.0, dtype='f4')), (np.multiply(sigma, (np.subtract(x, mu)), dtype='f4'))))
     elif psyfun == 'Weibull':
         # F(x; mu, sigma)
         p = 1 - np.exp(-(np.divide(x, mu)) ** sigma)
     else:
         # flat line if no psychometric function is specified
-        p = np.ones(np.shape(mu))
-    y = gamma + np.multiply((ones - gamma - llambda), p)
+        p = np.ones(np.shape(mu), dtype='f4')
+    y = gamma + np.multiply((ones - gamma - llambda), p, dtype='f4')
     return y
 
 class Psi:
@@ -213,10 +215,10 @@ class Psi:
         # Psychometric function parameters
         self.stimRange = stimRange  # range of stimulus intensities
         self.version = 1.0
-        self.threshold = np.arange(-10, 10, 0.1)
-        self.slope = np.arange(0.005, 20, 0.1)
-        self.guessRate = np.arange(0.0, 0.11, 0.05)
-        self.lapseRate = np.arange(0.0, 0.11, 0.05)
+        self.threshold = np.arange(-10, 10, 0.1, dtype='f4')
+        self.slope = np.arange(0.005, 20, 0.1, dtype='f4')
+        self.guessRate = np.arange(0.0, 0.11, 0.05, dtype='f4')
+        self.lapseRate = np.arange(0.0, 0.11, 0.05, dtype='f4')
         self.marginalize = marginalize  # marginalize out nuisance parameters gamma and lambda?
         self.psyfun = Pfunction
         self.thread = thread
@@ -315,7 +317,7 @@ class Psi:
         """
         if distr == 'uniform':
             nx = len(x)
-            p = np.ones(nx) / nx
+            p = np.ones(nx, dtype='f4') / nx
         elif distr == 'normal':
             p = np.exp(-(x-mu)**2 / (2.0*(sig)**2)) / np.sqrt(2.0*np.pi*(sig)**2)
         elif distr == 'beta':
@@ -327,7 +329,7 @@ class Psi:
             p = x ** (mu - 1) * (np.exp(-x)) / math.gamma(sig)
         else:
             nx = len(x)
-            p = np.ones(nx) / nx
+            p = np.ones(nx, dtype='f4') / nx
         return p
 
     def meta_data(self):
@@ -372,7 +374,7 @@ class Psi:
         # find expected entropy, suppress divide-by-zero and invalid value warnings
         # as this is handled by the NaN redefinition to 0
         with np.errstate(divide='ignore', invalid='ignore'):
-            entropy = np.multiply(pdf, np.log(pdf))
+            entropy = np.multiply(pdf, np.log(pdf), dtype='f4')
         entropy[np.isnan(entropy)] = 0  # define 0*log(0) to equal 0
         dimSum = tuple(range(postDims - 1))  # dimensions to sum over. also a Chinese dish
         entropy = -(np.sum(entropy, axis=dimSum))
@@ -393,7 +395,7 @@ class Psi:
 
         # Probabilities of response r (succes, failure) after presenting a stimulus
         # with stimulus intensity x at the next trial, multiplied with the prior (pdfND)
-        self.pTplus1success = np.multiply(self.likelihood, self.pdfND)
+        self.pTplus1success = np.multiply(self.likelihood, self.pdfND, dtype='f4')
         self.pTplus1failure = self.pdfND - self.pTplus1success
 
         # Probability of success or failure given stimulus intensity x, p(r|x)
@@ -409,8 +411,7 @@ class Psi:
         # Expected entropy for the next trial at intensity x, producing response r
         self.entropySuccess = self.__entropy(self.posteriorTplus1success)
         self.entropyFailure = self.__entropy(self.posteriorTplus1failure)
-        self.expectEntropy = np.multiply(self.entropySuccess, self.pSuccessGivenx) + np.multiply(self.entropyFailure,
-                                                                                                 self.pFailureGivenx)
+        self.expectEntropy = np.multiply(self.entropySuccess, self.pSuccessGivenx, dtype='f4') + np.multiply(self.entropyFailure, self.pFailureGivenx, dtype='f4')
         self.minEntropyInd = np.argmin(self.expectEntropy)  # index of smallest expected entropy
         self.xCurrent = self.stimRange[self.minEntropyInd]  # stim intensity at minimum expected entropy
 
@@ -457,16 +458,16 @@ class Psi:
             self.pGuess = np.sum(self.pdf, axis=(0, 1, 3))
 
         # Distribution means as expected values of parameters
-        self.eThreshold = np.sum(np.multiply(self.threshold, self.pThreshold))
-        self.eSlope = np.sum(np.multiply(self.slope, self.pSlope))
-        self.eLapse = np.sum(np.multiply(self.lapseRate, self.pLapse))
-        self.eGuess = np.sum(np.multiply(self.guessRate, self.pGuess))
+        self.eThreshold = np.sum(np.multiply(self.threshold, self.pThreshold, dtype='f4'))
+        self.eSlope = np.sum(np.multiply(self.slope, self.pSlope, dtype='f4'))
+        self.eLapse = np.sum(np.multiply(self.lapseRate, self.pLapse, dtype='f4'))
+        self.eGuess = np.sum(np.multiply(self.guessRate, self.pGuess, dtype='f4'))
 
         # Distribution std of parameters
-        self.stdThreshold = np.sqrt(np.sum(np.multiply((self.threshold - self.eThreshold) ** 2, self.pThreshold)))
-        self.stdSlope = np.sqrt(np.sum(np.multiply((self.slope - self.eSlope) ** 2, self.pSlope)))
-        self.stdLapse = np.sqrt(np.sum(np.multiply((self.lapseRate - self.eLapse) ** 2, self.pLapse)))
-        self.stdGuess = np.sqrt(np.sum(np.multiply((self.guessRate - self.eGuess) ** 2, self.pGuess)))
+        self.stdThreshold = np.sqrt(np.sum(np.multiply((self.threshold - self.eThreshold) ** 2, self.pThreshold, dtype='f4')))
+        self.stdSlope = np.sqrt(np.sum(np.multiply((self.slope - self.eSlope) ** 2, self.pSlope, dtype='f4')))
+        self.stdLapse = np.sqrt(np.sum(np.multiply((self.lapseRate - self.eLapse) ** 2, self.pLapse),dtype='f4'))
+        self.stdGuess = np.sqrt(np.sum(np.multiply((self.guessRate - self.eGuess) ** 2, self.pGuess, dtype='f4')))
 
         # Start calculating the next minimum entropy stimulus
 
@@ -518,7 +519,7 @@ ntrials = 25
 mu = np.concatenate((np.arange(0.0, 15.2, 0.2), np.arange(15.25, 67.25, 0.25)))
 mu = np.delete(mu, 25)
 sigma = np.linspace(0.05, 1, 21)
-lapse = np.arange(0, 0.1, 0.01) 
+lapse = np.arange(0, 0.1, 0.01)
 guessRate = 0.5
 
 
@@ -612,9 +613,9 @@ class ParamInputScreenOne(Screen):
             self.psi_nTrials = 25
             self.parent.ids.trialsc.psi_nTrials = self.psi_nTrials
             self.t = threading.Thread(target = self.initialize_psi, args = [25])
-            self.t.start() 
+            self.t.start()
         psi_popup.argh.text = "%r selected" % self.staircase
-        psi_popup.open() 
+        psi_popup.open()
 
     # Popup window to check if everything is saved properly
     def show_popup(self):
@@ -626,7 +627,7 @@ class ParamInputScreenOne(Screen):
         # Check if any of the parameter inputs is missing!  
         if hasattr(self, 't'):
             #print(self.t.isAlive())
-            if self.t.isAlive():
+            if self.t.is_alive():
                 the_popup.argh.text = 'Threading in Progress'
                 the_popup.open()
             else:
@@ -645,7 +646,7 @@ class ParamInputScreenOne(Screen):
                     subj_info = {'age' : self.age_text_input.text, 'gender' : self.gender, 'right_used' : self.ids.rightchk.active, 'Staircase used': self.staircase}
                     self.parent.current = "param_screen_two"
 
-        else: 
+        else:
             if any([self.pid_text_input.text == "", self.age_text_input.text == "", self.gender == None, self.staircase == None, self.handed_chk == False]):
                 the_popup.argh.text = "Missing Values"
                 the_popup.open()
@@ -976,7 +977,7 @@ class TrialScreen(Screen):
                             list_a = [range(x, y) for x, y in zip([26,37,43],[36,42,53])]
                             catch = [10, 36, 42]
 
-                        psi_order = np.ones(int(self.psi_nTrials*2 + np.ceil(self.psi_nTrials/10)))
+                        psi_order = np.ones(int(self.psi_nTrials*2 + np.ceil(self.psi_nTrials/10)), dtype='f4')
                         psi_obj1_trials = [int(item) for sublist in list_a for item in sublist]
                         psi_order[psi_obj1_trials] = 0
                         psi_order[catch] = 2
@@ -1130,8 +1131,8 @@ class TestScreenPM(Screen):
                 ## If you see no issue, go save your trial info!
                 if self.psi_order[self.trial_num] == 2:
                     self.subj_trial_info["_".join(["TRIAL", str(self.trial_num)])] = {'trial_num': self.trial_num, 'Visual_stimulus(deg)': self.ids.cw.false_ref + self.ids.cw.degree_dir*self.ids.cw.degree, 'correct_ans': correct_ans, 'response': rel_pos, 'response_correct': self.right_or_wrong}
-                else: 
-                    self.subj_trial_info["_".join(["TRIAL", str(self.trial_num)])] = {'trial_num': self.trial_num, 'Psi_obj': self.psi_type[int(self.psi_order[self.trial_num])], 'Psi_stimulus(deg)': self.ids.cw.degree, 'Visual_stimulus(deg)': self.ids.cw.false_ref + self.ids.cw.degree_dir * self.ids.cw.degree, 'correct_ans': correct_ans, 'response': rel_pos, 'response_correct': self.right_or_wrong} 
+                else:
+                    self.subj_trial_info["_".join(["TRIAL", str(self.trial_num)])] = {'trial_num': self.trial_num, 'Psi_obj': self.psi_type[int(self.psi_order[self.trial_num])], 'Psi_stimulus(deg)': self.ids.cw.degree, 'Visual_stimulus(deg)': self.ids.cw.false_ref + self.ids.cw.degree_dir * self.ids.cw.degree, 'correct_ans': correct_ans, 'response': rel_pos, 'response_correct': self.right_or_wrong}
 
         elif self.fucked_up_cnt == 0:
             ## It is likely that if the user fails one of the first three trials, the user may never converge to the finger position.
@@ -1147,10 +1148,10 @@ class TestScreenPM(Screen):
                 if self.parent.ids.paramscone.staircase == 'Psi-Marginal_7':
                     list_a = [range(x, y) for x, y in zip([5, 18, 29, 39, 50], [12, 23, 34, 44, 53])]
                 elif self.parent.ids.paramscone.staircase == 'Psi-Marginal_10':
-                    list_a = [range(x, y) for x, y in zip([10, 26, 37, 48], [20, 31, 42, 53])] 
+                    list_a = [range(x, y) for x, y in zip([10, 26, 37, 48], [20, 31, 42, 53])]
                 psi_obj1_trials = [int(item) for sublist in list_a for item in sublist]
                 # Psi-order should be renewed
-                psi_order = np.ones(int(self.psi_nTrials*2 + np.ceil(self.psi_nTrials/10)))
+                psi_order = np.ones(int(self.psi_nTrials*2 + np.ceil(self.psi_nTrials/10)), dtype='f4')
                 psi_order[psi_obj1_trials] = 0
                 psi_order[self.catch] = 2
                 self.psi_order = psi_order
@@ -1171,11 +1172,11 @@ class TestScreenPM(Screen):
                 if self.parent.ids.paramscone.staircase == 'Psi-Marginal_7':
                     list_a = [range(x, y) for x, y in zip([7, 18, 29, 45], [12, 23, 34, 48])]
                     psi_obj1_trials = [int(item) for sublist in list_a for item in sublist]
-                    psi_order = np.concatenate((self.psi_order[0:7], np.ones(len(self.psi_order) - 7)))
+                    psi_order = np.concatenate((self.psi_order[0:7], np.ones(len(self.psi_order) - 7, dtype='f4')))
                 elif self.parent.ids.paramscone.staircase == 'Psi-Marginal_10':
                     list_a = [range(x, y) for x, y in zip([10,26,43],[15,31,48])]
                     psi_obj1_trials = [int(item) for sublist in list_a for item in sublist]
-                    psi_order = np.concatenate((self.psi_order[0:10], np.ones(len(self.psi_order) - 10)))
+                    psi_order = np.concatenate((self.psi_order[0:10], np.ones(len(self.psi_order) - 10, dtype='f4')))
                 psi_order[psi_obj1_trials] = 0
                 psi_order[self.catch] = 2
                 self.psi_order = psi_order
@@ -1218,10 +1219,10 @@ class TestScreenPM(Screen):
         if self.trial_num == len(self.psi_order)-1 or self.fucked_up_cnt == 2:
             self.reset()
         elif self.fucked_up:
-            if len(self.first_few['A']) == 0: 
+            if len(self.first_few['A']) == 0:
                 self.delta_d = float(psi_obj2.xCurrent)
                 self.ids.cw.false_ref = 45
-                self.ids.cw.degree_dir = 1 
+                self.ids.cw.degree_dir = 1
                 self.ids.cw.degree = float(self.delta_d)
             elif len(self.first_few['B']) == 0:
                 self.delta_d = float(psi_obj1.xCurrent)
@@ -1231,7 +1232,7 @@ class TestScreenPM(Screen):
             # Fucked up status checked
             self.fucked_up = not(self.fucked_up)
             # The buttons will be reactivated after 1.2s
-            Clock.schedule_once(self.reactivate_leftbutton, 2) 
+            Clock.schedule_once(self.reactivate_leftbutton, 2)
         else:
             if self.psi_order[self.trial_num] == 2:
                 if self.psi_order[self.trial_num + 1] == 1:
@@ -1242,7 +1243,7 @@ class TestScreenPM(Screen):
                     self.delta_d = float(psi_obj1.xCurrent)
                     self.ids.cw.false_ref = 55
                     self.ids.cw.degree_dir = -1
-                
+
             elif self.psi_order[self.trial_num] == 0:
                 psi_obj1.addData(self.right_or_wrong)
                 while psi_obj1.xCurrent is None: # Wait until calculation is complete
@@ -1268,11 +1269,11 @@ class TestScreenPM(Screen):
                 else:
                     self.delta_d = float(psi_obj2.xCurrent)
 
-            self.ids.cw.degree = float(self.delta_d) 
+            self.ids.cw.degree = float(self.delta_d)
             self.trial_num += 1
 
             # The buttons will be reactivated after 1.2s
-            Clock.schedule_once(self.reactivate_leftbutton, 2) 
+            Clock.schedule_once(self.reactivate_leftbutton, 2)
 
         print("nTrials: ", self.psi_nTrials, "first B trials:", self.first_few['B'], 'psi_order', self.psi_order)
 
@@ -1282,7 +1283,7 @@ class TestScreenPM(Screen):
 
     def reset(self):
         # Dump everything to the store
-        store.put(subid, subj_info = subj_info, subj_anth = subj_anth, subj_trial_info = self.subj_trial_info) 
+        store.put(subid, subj_info = subj_info, subj_anth = subj_anth, subj_trial_info = self.subj_trial_info)
 
         self.parent.ids.outsc.avg_performance = str(np.mean(np.array(self.psi_stims[-11:])) - 5.0)
 
@@ -1398,7 +1399,7 @@ class TestScreenRN(Screen):
         temp_counted = self.ids.cw.degree_dir * temp
 
         if temp_counted in self.stim_count.keys():
-            while (self.stim_count[temp_counted] == 3): 
+            while (self.stim_count[temp_counted] == 3):
                 temp = self.stim_vals[np.random.randint(len(self.stim_vals))]
                 temp_counted = self.ids.cw.degree_dir * temp
 
@@ -1425,20 +1426,20 @@ class TestScreenRN(Screen):
             temp = self.stim_vals[np.random.randint(len(self.stim_vals))]
             if self.psi_order[self.trial_num] == 0:
                 if self.psi_order[self.trial_num + 1] == 1:
-                    self.is_temp_in(temp, shift = True, dirshift = 'thumb_to_middle') 
+                    self.is_temp_in(temp, shift = True, dirshift = 'thumb_to_middle')
                 else:
                     self.is_temp_in(temp, shift = False)
             else:
                 if self.psi_order[self.trial_num + 1] == 0:
-                    self.is_temp_in(temp, shift = True, dirshift = 'middle_to_thumb') 
+                    self.is_temp_in(temp, shift = True, dirshift = 'middle_to_thumb')
                 else:
                     self.is_temp_in(temp, shift = False)
 
-            self.ids.cw.degree = float(self.delta_d) 
+            self.ids.cw.degree = float(self.delta_d)
             self.trial_num += 1
 
             # The buttons will be reactivated after 1.2s
-            Clock.schedule_once(self.reactivate_leftbutton, 2) 
+            Clock.schedule_once(self.reactivate_leftbutton, 2)
 
         ## change the colors of the screen
         Clock.schedule_once(self.change_col_setting, 2)
@@ -1446,7 +1447,7 @@ class TestScreenRN(Screen):
 
     def reset(self):
         # Dump everything to the store
-        store.put(subid, subj_info = subj_info, subj_anth = subj_anth, subj_trial_info = self.subj_trial_info) 
+        store.put(subid, subj_info = subj_info, subj_anth = subj_anth, subj_trial_info = self.subj_trial_info)
 
         self.parent.ids.outsc.avg_performance = str(np.mean(np.array(self.psi_stims[-11:])) - 5.0)
 
@@ -1503,4 +1504,6 @@ class ProprioceptiveApp(App):
         return screen_manager(transition=FadeTransition())
 
 if __name__ == '__main__':
+    Window.fullscreen = True
+    Window.maximize()
     ProprioceptiveApp().run()
