@@ -7,4 +7,5 @@ This is a mobile application that tests your finger position sesne.
 It has been written in Python and Kivy (version 1.10.0, https://kivy.org/#home)
 
 Details about the system can be found here: https://doi.org/10.1115/DMD2020-9088
+
 An application of the system can be found here: https://doi.org/10.1080/00222895.2022.2134287
