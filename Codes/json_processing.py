@@ -378,39 +378,16 @@ subj_id = 'SUBJ_130'
 catch_trials = np.where(np.array(psi_obj[subj_id]) == 'C')[0]
 psi_obj_ce = [y for x, y in enumerate(psi_obj[subj_id]) if x not in catch_trials]
 vis_stim_ce = [y for x, y in enumerate(vis_stim[subj_id]) if x not in catch_trials]
-if_corr_ce = [y for _, y in enumerate(if_corr[subj_id]) if x not in catch_trials]
-if_corr_ce_inverted = [int(not(y)) for x, y in enumerate(if_corr[subj_id]) if x not in catch_trials]
+if_corr_ce = [int(not(y)) for x, y in enumerate(if_corr[subj_id]) if x not in catch_trials]
 
-test = sorted([(x,y) for x, y in zip(vis_stim_ce, if_corr_ce_inverted)])
-
-fig, ax = plt.subplots(1,1, dpi=300)
-ax.scatter(*zip(*sorted([(x,y) for x, y in zip(vis_stim_ce, if_corr_ce)])), s=6)
-ax.set_title("%s, RAW DATA" % subj_id)
-ax.set_xlabel('Visual stimulus (deg)')
-ax.set_ylabel('Correctness')
-plt.show()
-
-
-fig, ax = plt.subplots(1,1, dpi=300)
-ax.scatter(*zip(*test), s=6)
-ax.set_title("%s, RAW DATA" % subj_id)
-ax.set_xlabel('Visual stimulus (deg)')
-ax.set_ylabel('Correctness')
-plt.show()
+test = sorted([(x,y) for x, y in zip(vis_stim_ce, if_corr_ce)])
 
 # Done nothing
 stim_fi = defaultdict(list)
-for x,y in zip(vis_stim_ce,if_corr_ce_inverted):
+for x,y in zip(vis_stim_ce,if_corr_ce):
     stim_fi[x].append(y)
 
 stim_fi2 = {x:np.mean(y) for x, y in stim_fi.items()}
-
-fig, ax = plt.subplots(1,1, dpi=300)
-ax.scatter(*zip(*stim_fi2.items()), s=8)
-ax.set_title("%s, CLEANED DATA" % subj_id)
-ax.set_xlabel('Visual stimulus (deg)')
-ax.set_ylabel('Relative Frequency (f_i)')
-plt.show()
 
 denom = sum(stim_fi2.values())
 stim_pi = {x:y/denom for x, y in stim_fi2.items()}
@@ -423,58 +400,9 @@ stim_pi = {x:y/denom for x, y in stim_fi2.items()}
 fig, ax = plt.subplots(1,1,dpi=300)
 ax.plot(*zip(*sorted(stim_pi.items())), markersize=3, marker = 'o', mfc='b', mec='b', c='r')
 ax.axvline(μ, alpha=0.4)
-ax.set_ylabel('density', fontsize=10)
-ax.set_xlabel('Visual stimulus (deg)', fontsize = 10)
+ax.set_ylabel('density')
 ax.set_title('%s RAW DATA, non-parametric (μ = %.1f, σ = %.1f)' % (subj_id, μ, σ))
-plt.rc('xtick', labelsize=8)
-plt.rc('ytick', labelsize=8)
-plt.tight_layout()
 plt.show()
-
-calc_density(stim_pi)
-raw_skewed = skewfit(stim_pi)
-raw_skewed_by_density = skewfit(stim_pi, byDensity=True)
-
-
-def calc_skewed_params(a_dict): 
-
-    π = np.pi
-    α = a_dict['popt'][2]
-    print(α)
-    σ = a_dict['popt'][1]
-    ξ = a_dict['popt'][0]
-    δ = α / (np.sqrt(1+α**2))
-    μz = np.sqrt(2/π)*δ
-    σz = np.sqrt(1 - μz**2)
-    γ1 = (4 - π)/2 * ((δ*np.sqrt(2/π))**3)/(1-2*δ**2/π)**(3/2)
-    m0a = μz - γ1*σz/2 - np.sign(α)/2*np.exp(-2*π/abs(α))
-    mode = ξ + σ*m0a
-    mean = ξ + σ*δ*np.sqrt(2/π)
-
-    return mode, mean
-
-mode0, mean0 = calc_skewed_params(raw_skewed)
-mode, mean = calc_skewed_params(raw_skewed_by_density)
-
-newx = np.linspace(20, 80, 200)
-markersize = 10
-fig, ax = plt.subplots(2,1, dpi=300, sharex=True, sharey=True)
-ax[0].plot(*zip(*sorted(stim_pi.items())), markersize=3, marker = 'o', mfc='b', mec='b', c='r')
-ax[0].axvline(μ, alpha=0.4)
-ax[0].set_title('%s RAW DATA, non-parametric (μ = %.1f, σ = %.1f)' % (subj_id, μ, σ), fontsize=8)
-ax[1].scatter(raw_skewed['xdata'], raw_skewed['ydata'], color='blue', s = markersize)
-ax[1].plot(newx, skew(newx, *raw_skewed['popt']), color='red')
-#ax[1].text(35, 0.2, subj_id)
-ax[1].axvline(mode0, alpha= 0.5)
-ax[1].axvline(mean0, alpha=0.5, c='g')
-ax[1].set_title('%s RAW DATA, skewnorm (mode = %.1f, mean = %.1f)' %  (subj_id, mode0, mean0), fontsize=8)
-ax[1].set_ylabel('density')
-plt.rc('xtick', labelsize=5)
-plt.xlabel('Visual stimulus (deg)', fontsize=6)
-plt.ylabel('density', fontsize=6)
-plt.tight_layout()
-plt.show()
-
 
 # Forward moving average
 n = 3
@@ -541,36 +469,30 @@ def skew(x, e=0, w=1, a=0):
     t = (x-e)/w
     return (2/w)*pdf(t)*cdf(a*t)
 
-def skewfit(orgdict, byDensity = False):
+def skewfit(orgdict):
     outdict = calc_density(orgdict)
     xdata, ydata = zip(*outdict['pi_dict'].items())
     xdata = list(xdata); ydata = list(ydata)
-    if byDensity:
-        popt, pcov = curve_fit(skew, xdata, ydata, p0 = [outdict['μ'], outdict['σ'], 1])
-    else:
-        popt, pcov = curve_fit(skew, xdata, list(orgdict.values()), p0 = [outdict['μ'], outdict['σ'], 1])
+    popt, pcov = curve_fit(skew, xdata, list(orgdict.values()), p0 = [outdict['μ'], outdict['σ'], 1])
     return {'popt':popt, 'pcov':pcov, 'xdata':xdata, 'ydata':ydata}
 
 skew1 = skewfit(out_cleaned)
 skew2 = skewfit(out2_cleaned)
 
-mode2, mean2 = calc_skewed_params(skew1)
-mode3, mean3 = calc_skewed_params(skew2)
-
 # Let's compare different 'binning' methods
-newx = np.linspace(20, 80, 200)
+newx = np.linspace(25, 75, 200)
 markersize = 10
 fig, ax = plt.subplots(3,1, sharex=True, sharey=True, dpi=300)
 ax[0].scatter(skew1['xdata'], skew1['ydata'], color='blue', s = markersize)
 ax[0].plot(newx, skew(newx, *skew1['popt']), color='red')
 ax[0].text(35, 0.2, subj_id)
-ax[0].axvline(mode2, alpha= 0.5)
-ax[0].set_title('Moving Avg. (n = %d, F) - skewnorm (mode = %.1f)' % (n, mode2))
+ax[0].axvline(skew1['popt'][0], alpha= 0.5)
+ax[0].set_title('Moving Avg. (n = %d, F) - skewnorm (ξ = %.1f, ω = %.1f, α = %.1f)' % (n, *skew1['popt']))
 
 ax[1].scatter(skew2['xdata'], skew2['ydata'], color='blue', s = markersize)
 ax[1].plot(newx, skew(newx, *skew2['popt']), color='red')
-ax[1].axvline(mode3, alpha = 0.5)
-ax[1].set_title('Moving Avg. (n = %d, BF) - skewnorm (mode = %.1f)' % (n, mode3))
+ax[1].axvline(skew2['popt'][0], alpha = 0.5)
+ax[1].set_title('Moving Avg. (n = %d, BF) - skewnorm (ξ = %.1f, ω = %.1f, α = %.1f)' % (n, *skew2['popt']))
 
 ax[2].plot(*zip(*output3['pi_dict'].items()), marker='o', color='red', mec='blue', mfc='blue', markersize = 3)
 ax[2].axvline(output3['μ'], alpha=0.5)
@@ -588,9 +510,9 @@ ax[0].set_title('%s RAW DATA, non-parametric (μ = %.1f, σ = %.1f)' % (subj_id,
 
 ax[1].scatter(skew1['xdata'], skew1['ydata'], color='blue', s=markersize)
 ax[1].plot(newx, skew(newx, *skew1['popt']), color='red')
-ax[1].axvline(mode2, alpha= 0.5)
-ax[1].axvline(mean2, alpha=0.5, c='g')
-ax[1].set_title('Moving Avg. (n = %d, F) - skewnorm (mode = %.1f, mean = %.1f)' % (n, mode2, mean2))
+ax[1].text(35, 0.05, subj_id)
+ax[1].axvline(skew1['popt'][0], alpha= 0.5)
+ax[1].set_title('Moving Avg. (n = %d, F) - skewnorm (ξ = %.1f, ω = %.1f, α = %.1f)' % (n, *skew1['popt']))
 
 ax[2].plot(skew1['xdata'], skew1['ydata'], color='red', markersize = 3, marker = 'o', mfc='blue', mec='blue')
 ax[2].axvline(output1['μ'], alpha=0.5)
@@ -607,9 +529,9 @@ ax[0].set_title('%s RAW DATA, non-parametric (μ = %.1f, σ = %.1f)' % (subj_id,
 
 ax[1].scatter(skew2['xdata'], skew2['ydata'], color='blue', s=markersize)
 ax[1].plot(newx, skew(newx, *skew2['popt']), color='red')
-ax[1].axvline(mode3, alpha= 0.5)
-ax[1].axvline(mean3, alpha= 0.5, c='g')
-ax[1].set_title('Moving Avg. (n = %d, FB) - skewnorm (mode = %.1f, mean = %.1f)' % (n, mode3, mean3))
+ax[1].text(35, 0.05, subj_id)
+ax[1].axvline(skew2['popt'][0], alpha= 0.5)
+ax[1].set_title('Moving Avg. (n = %d, FB) - skewnorm (ξ = %.1f, ω = %.1f, α = %.1f)' % (n, *skew2['popt']))
 
 ax[2].plot(skew2['xdata'], skew2['ydata'], color='red', markersize = 3, marker = 'o', mfc='blue', mec='blue')
 ax[2].axvline(output2['μ'], alpha=0.5)

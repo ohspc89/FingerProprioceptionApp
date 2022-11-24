@@ -2,17 +2,21 @@ import math, time, copy
 import numpy as np
 from random import randrange
 from kivy.uix.screenmanager import Screen, ScreenManager, FadeTransition
+from kivy.uix.dropdown import DropDown
+from kivy.uix.button import Button
 from kivy.core.window import Window
 from kivy.app import App
-from kivy.properties import ObjectProperty, StringProperty
+from kivy.clock import Clock
+from kivy.properties import ObjectProperty, StringProperty, ListProperty, NumericProperty, BooleanProperty
 from kivy.uix.popup import Popup
 from kivy.uix.floatlayout import FloatLayout
 from kivy.storage.jsonstore import JsonStore
-from kivy.uix.checkbox import CheckBox
 from kivy import platform
+from kivy.graphics.stencil_instructions import *
 import threading
 
-Window.fullscreen = 'auto'
+#Window.fullscreen = 'auto'
+#Config.set('graphics', 'fullscreen', 1)
 
 def cartesian(arrays, out=None):
     """Generate a cartesian product of input arrays.
@@ -111,6 +115,7 @@ def pf(parameters, psyfun='cGauss'):
         p = 0.5 * np.array([math.erfc(-zi / np.sqrt(2)) for zi in z])
     elif psyfun == 'Gumbel':
         # F(x; mu, sigma) = 1 - exp(-10^(sigma(x-mu)))
+        #p = ones - np.exp(-np.power((np.multiply(ones, 10.0, dtype='f4')), (np.multiply(sigma, (np.subtract(x, mu)), dtype='f4'))))
         p = ones - np.exp(-np.power((np.multiply(ones, 10.0)), (np.multiply(sigma, (np.subtract(x, mu))))))
     elif psyfun == 'Weibull':
         # F(x; mu, sigma)
@@ -184,8 +189,7 @@ class Psi:
 
         Example:
             >>> s   = range(-5,5) # possible stimulus intensities
-            obj = Psi(s)
-
+            obj = Psi(s) 
         The stimulus intensity to be used in the current trial can be found in the field xCurrent.
 
         Example:
@@ -260,6 +264,7 @@ class Psi:
                 np.prod(cartesian((self.priorMu, self.priorSigma, self.priorLambda)), axis=1), self.dimensions[:-1])
         else:
             self.dimensions = (len(self.threshold), len(self.slope), len(self.guessRate), len(self.lapseRate), len(self.stimRange))
+            self.pfout = pf(cartesian((self.threshold, self.slope, self.guessRate, self.lapseRate, self.stimRange)), 'Gumbel')
             self.likelihood = np.reshape(
                 pf(cartesian((self.threshold, self.slope, self.guessRate, self.lapseRate, self.stimRange)), psyfun=Pfunction), self.dimensions)
             # row-wise products of prior probabilities
@@ -406,8 +411,7 @@ class Psi:
         # Expected entropy for the next trial at intensity x, producing response r
         self.entropySuccess = self.__entropy(self.posteriorTplus1success)
         self.entropyFailure = self.__entropy(self.posteriorTplus1failure)
-        self.expectEntropy = np.multiply(self.entropySuccess, self.pSuccessGivenx) + np.multiply(self.entropyFailure,
-                                                                                                 self.pFailureGivenx)
+        self.expectEntropy = np.multiply(self.entropySuccess, self.pSuccessGivenx) + np.multiply(self.entropyFailure, self.pFailureGivenx)
         self.minEntropyInd = np.argmin(self.expectEntropy)  # index of smallest expected entropy
         self.xCurrent = self.stimRange[self.minEntropyInd]  # stim intensity at minimum expected entropy
 
@@ -508,24 +512,38 @@ mu = threshold parameter
 sigma = slope parameter
 StimLevels = delta angle
 '''
+
+## testing purpose
+## These parameter values would give the initial value of 30
 ntrials = 25
-#mu = np.arange(0.1, 45.8, 0.1)
-mu = np.concatenate((np.arange(0.1, 15.1, 0.1), np.linspace(20, 44, 120)))
-mu = np.delete(mu, 49)
+mu = np.concatenate((np.arange(0.0, 15.2, 0.2), np.arange(15.25, 67.25, 0.25)))
+mu = np.delete(mu, 25)
 sigma = np.linspace(0.05, 1, 21)
-lapse = 0.05
+lapse = np.arange(0, 0.1, 0.01)
 guessRate = 0.5
 
-# 5.0 degrees deviation means the exact spot of the center of an index finger - skipped
-stimLevels = np.concatenate((np.arange(0.1, 15.1, 0.1), np.linspace(20, 22, 120)))
-#np.arange(0, 45.8, 0.1)
-stimLevels = np.delete(stimLevels, 49)
+# Why am I removing 25? There must be a reason. Don't edit it.
+stimLevels = np.concatenate((np.arange(0.0, 15.2, 0.2), np.arange(15.25, 67.25, 0.25)))
+stimLevels = np.delete(stimLevels, 25)
 
-slopePrior = ('gamma', 2, 20)
+# The first psi_obj.xCurrent = 20.0
 
-psi_obj = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = ntrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True)
+'''
+Pickle cannot be used...
+try:
+    file_psi = open('psi_orig.pkl', 'rb')
+    psi_orig = pickle.load(file_psi)
+except:
+    psi_orig = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = ntrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True)
+'''
+global psi_orig, psi_obj1, psi_obj2
+psi_orig = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = ntrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma,\
+               slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse,\
+               lapsePrior = ('uniform', None), marginalize = True, thread = True)
 
-psi_obj2 = copy.copy(psi_obj)
+psi_obj1 = copy.copy(psi_orig)
+psi_obj2 = copy.copy(psi_orig)
+print(psi_obj1.xCurrent)
 
 class CalibrationScreen(Screen):
 
@@ -541,39 +559,147 @@ class CalibPopup(Popup):
 class ParamPopup(Popup):
     pass
 
+class PracticePopup(Popup):
+    pass
+
+class TrialPMc4Popup(Popup):
+    pass
+
+class GotoRNPopup(Popup):
+    pass
+
+class GotoASPopup(Popup):
+    pass
+
+class GotoPracPopup(Popup):
+    pass
+
+class AreYouSurePopup(Popup):
+    pass
+
+class CustomDropDown(DropDown):
+    pass
+
 class ParamInputScreenOne(Screen):
 
+    repeat = BooleanProperty(False)
     gender = ObjectProperty(None)
     staircase = ObjectProperty(None)
     handed_chk = ObjectProperty(False)
+    dd_btn = ObjectProperty(None)
+
+    def __init__(self, *args, **kwargs):
+        super(ParamInputScreenOne, self).__init__(*args, **kwargs)
+
+        # So we make an instance of the class: CustomDropDown
+        self.drop_down = CustomDropDown()
+
+        # These are the options
+        # 11/20/22. HJB requested the practice trials to be separated
+        notes = ["Practice", "Psi-Marginal_10", "Adaptive-Staircase"]
+        for note in notes:
+            btn = Button(text = '%r' % note, size_hint_y=None, height=40)
+
+            # each button has a callback that will call the select() method on the dropdown
+            # pass the text of the button as the data of the selection
+            btn.bind(on_release = lambda btn: self.drop_down.select(btn.text))
+
+            # add the button inside the dropdown
+            self.drop_down.add_widget(btn)
+
+        self.drop_down.bind(on_release = self.drop_down.open)
+        self.drop_down.bind(on_select = lambda instance, x:self.make_staircase_selection(x))
+
+    def make_staircase_selection(self, x):
+
+        psi_popup = ParamPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
+        setattr(self.dd_btn, 'text', x)
+        self.staircase = x.strip("\'")
+        # Options other than 'Psi-Marginal_10' are the legacies of previous development
+        if self.staircase in ['Psi-Marginal_7', 'Psi-Marginal_10', 'Psi-M(A)', 'Psi-M(B)']:
+            self.parent.ids.paramsc.initd_text_input.disabled = True
+            self.parent.ids.paramsc.psi_nTrials = 25
+            #self.parent.ids.trialsc.psi_nTrials = self.psi_nTrials
+            #self.t = threading.Thread(target = self.initialize_psi, args = [25])
+            # Actually, treading here is no longer needed
+            self.t = threading.Thread(target = self.initialize_psi)
+            self.t.start()
+        elif self.staircase == 'Adaptive-Staircase':
+            # Make sure that you could enter the initial step size when you pick Adaptive Staircase
+            self.parent.ids.paramsc.initd_text_input.disabled = False
+        psi_popup.argh.text = "%r selected" % self.staircase
+        psi_popup.open()
 
     # Popup window to check if everything is saved properly
     def show_popup(self):
 
         the_popup = ParamPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
+        global subid
+        global subj_info
 
         # Check if any of the parameter inputs is missing!
-        if any([self.pid_text_input.text == "", self.age_text_input.text == "", self.gender == None, self.staircase == None, self.handed_chk == False]) is True:
-            the_popup.argh.text = "Missing Values"
-            the_popup.open()
+        if hasattr(self, 't'):
+            #print(self.t.isAlive())
+            if self.t.is_alive():
+                the_popup.argh.text = 'Threading in Progress'
+                the_popup.open()
+            else:
+                if any([self.pid_text_input.text == "", self.age_text_input.text == "", self.gender == None, self.staircase == None, self.handed_chk == False]):
+                    the_popup.argh.text = "Missing Values"
+                    the_popup.open()
+                else:
+                    self.parent.ids.testsc_pm.delta_d = float(psi_obj1.xCurrent)
+                    if self.staircase == 'Psi-M(B)':
+                        self.parent.ids.testsc_pm.handedness.degree_dir = 1
+                        self.parent.ids.trialsc.handedness.degree_dir = 1
+                    else:
+                        self.parent.ids.testsc_pm.handedness.degree_dir = -1
+                        self.parent.ids.trialsc.handedness.degree_dir = -1
+                    subid = "_".join(["SUBJ", self.pid_text_input.text])
+                    subj_info = {'age' : self.age_text_input.text, 'gender' : self.gender, 'right_used' : self.ids.rightchk.active, 'Staircase used': self.staircase}
+                    self.parent.current = "param_screen_two"
+
         else:
-            global subid
-            subid = "_".join(["SUBJ", self.pid_text_input.text])
-            global subj_info
-            subj_info = {'age' : self.age_text_input.text, 'gender' : self.gender, 'right_used' : self.ids.rightchk.active, 'Staircase used': self.staircase}
-            self.parent.current = "param_screen_two"
+            self.parent.ids.trialsc.handedness.degree_dir = -1
+            if any([self.pid_text_input.text == "", self.age_text_input.text == "", self.gender == None, self.staircase == None, self.handed_chk == False]):
+                the_popup.argh.text = "Missing Values"
+                the_popup.open()
+            else:
+                subid = "_".join(["SUBJ", self.pid_text_input.text])
+                subj_info = {'age' : self.age_text_input.text, 'gender' : self.gender, 'right_used' : self.ids.rightchk.active, 'Staircase used': self.staircase}
+                self.parent.current = "param_screen_two"
+
+    def initialize_psi(self):
+        global psi_orig, psi_obj1, psi_obj2
+        #psi_obj1 = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = ntrial, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True)
+        psi_obj1 = copy.copy(psi_orig)
+        psi_obj2 = copy.copy(psi_orig)
 
     def Psimarginal_Yes(self, state):
-
         # A popup window to make sure that Psi-marginal is chosen
         psi_popup = ParamPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
 
         if state:
+            self.psi_nTrials = 25
+            #self.t = threading.Thread(target = self.initialize_psi, args = [25])
+            #self.t.start()
             self.staircase = "Psi-Marginal"
             self.parent.ids.paramsc.initd_text_input.text = 'N/A'
-            psi_popup.argh.text = "Psi-Marginal selected"
+            psi_popup.argh.text = "Psi-Marginal(Short) selected"
             psi_popup.open()
 
+    # Presenting randomized set stimuli to test if psi-marginal is restricting the individuals in their choices.
+    def Randomized_Yes(self, state):
+
+        psi_popup = ParamPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
+
+        if state:
+            self.staircase = "Randomized"
+            self.parent.ids.paramsc.initd_text_input.text = 'N/A'
+            psi_popup.argh.text = "Randomized Stimuli selected"
+            psi_popup.open()
+
+    # This one is not used, right?
     def Adaptive_Yes(self, state):
 
         psi_popup = ParamPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
@@ -583,6 +709,10 @@ class ParamInputScreenOne(Screen):
             self.parent.ids.paramsc.initd_text_input.text = ''
             psi_popup.argh.text = "Adaptive Staircase selected"
             psi_popup.open()
+
+    def if_active_repeat(self, state):
+        if state:
+            self.repeat = True
 
     def if_active_m(self, state):
         if state:
@@ -597,7 +727,9 @@ class ParamInputScreenOne(Screen):
         if state:
             # Will change the orientation of the testscreen's colorscreen
             self.parent.ids.testsc_pm.handedness.dir = 1
+            self.parent.ids.trialsc.handedness.dir = 1
             self.parent.ids.testsc_as.handedness.dir = 1
+            self.parent.ids.testsc_rn.handedness.dir = 1
 
             # Just for fool-proof
             self.handed_chk = True
@@ -605,34 +737,79 @@ class ParamInputScreenOne(Screen):
     def if_active_l(self, state):
         if state:
             self.parent.ids.testsc_pm.handedness.dir = -1
+            self.parent.ids.trialsc.handedness.dir = -1
             self.parent.ids.testsc_as.handedness.dir = -1
+            self.parent.ids.testsc_rn.handedness.dir = -1
 
             # Just for fool-proof
             self.handed_chk = True
 
 class ParamInputScreenTwo(Screen):
 
+    psi_nTrials = NumericProperty(None)
+
     # Popup window to check if everything is entered
     def show_popup2(self):
 
-        the_popup = ParamPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
-
         # Check if any of the parameter inputs is missing!
-        if any([self.flen_text_input.text == "", self.fwid_text_input.text == "", self.initd_text_input.text == "", self.mprad_text_input.text == ""]):
+        if any([self.flen_text_input.text == "", self.fwid_text_input.text == "",
+            (self.initd_text_input.disabled == False and self.initd_text_input.text == ""), self.mprad_text_input.text == ""]):
+            the_popup = ParamPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
             the_popup.argh.text = "Missing Values"
-            the_popup.open()
         else:
             global subj_anth
             subj_anth = {'flen' : self.flen_text_input.text, 'fwid' : self.fwid_text_input.text, 'init_step' : self.initd_text_input.text, 'MPJR' : self.mprad_text_input.text}
 
-            if self.parent.ids.paramscone.staircase == 'Psi-Marginal':
+            if self.parent.ids.paramscone.staircase in ['Psi-Marginal_7', 'Psi-Marginal_10', 'Psi-M(A)', 'Psi-M(B)']:
                 # Give the mp joint radius input to draw the test screen display
+                # This shall also be done for the trial PM screen display
                 self.parent.ids.testsc_pm.handedness.mprad = self.mprad_text_input.text
-                self.parent.current = "test_screen_PM"
+                the_popup = TrialPMc4Popup(title = "READ IT", size_hint = (None, None), size = (400, 400))
+                the_popup.argh.text = "Assessment Begins:\nPsi-Marginal"
+                # Catch trials at trial_num = {12, 23, 34}
+                if self.parent.ids.testsc_pm.fucked_up_cnt > 0:
+                    pass
+
+                else:
+                    if self.parent.ids.paramscone.staircase == 'Psi-Marginal_10':
+                        list_a = [range(x, y) for x, y in zip([0, 21, 32,43],[10, 26, 37,48])]
+                        catch = [20,31,42]
+                    elif self.parent.ids.paramscone.staircase == 'Psi-Marginal_7':
+                        list_a = [range(x, y) for x, y in zip([0, 13, 23, 34, 45], [7, 18, 28, 39, 48])]
+                        catch = [12, 28, 44]
+
+                    elif self.parent.ids.paramscone.staircase == 'Psi-M(A)':        #A 25 times first
+                        list_a = [range(x, y) for x, y in zip([0, 11],[10,26])]
+                        catch = [10, 31, 42]
+                    else:                                                           #B 25 times first
+                        list_a = [range(x, y) for x, y in zip([26,37,43],[36,42,53])]
+                        catch = [10, 36, 42]
+
+                    psi_order = np.ones(int(self.psi_nTrials*2 + np.ceil(self.psi_nTrials/10)))
+                    psi_obj1_trials = [int(item) for sublist in list_a for item in sublist]
+                    psi_order[psi_obj1_trials] = 0
+                    psi_order[catch] = 2
+                    self.parent.ids.testsc_pm.psi_order = psi_order             # Setting up the psi-stim order
+                    self.parent.ids.testsc_pm.catch = catch                     # indexing catch trials?
+                    self.parent.ids.testsc_pm.psi_nTrials = self.psi_nTrials    # nTrials....
+                    # Tell when the B trials (Mid to Index) start
+                    self.parent.ids.testsc_pm.fb_tr_n = int(np.where(psi_order==1)[0][0])
             elif self.parent.ids.paramscone.staircase == 'Adaptive-Staircase':
                 self.parent.ids.testsc_as.handedness.mprad = self.mprad_text_input.text
-                self.parent.current = "test_screen_AS"
+                the_popup = GotoASPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
+                the_popup.argh.text = 'Assessment Begins:\nAdaptive-Staircase'
+            elif self.parent.ids.paramscone.staircase == 'Practice':
+                self.parent.ids.trialsc.handedness.mprad = self.mprad_text_input.text
+                the_popup = GotoPracPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
+                the_popup.argh.text = 'Assessment Begins:\nPractice'
+            elif self.parent.ids.paramscone.staircase == 'Randomized':          # This is not used... but leave it for potential update
+                self.parent.ids.testsc_rn.handedness.mprad = self.mprad_text_input.text
 
+        # Open the popup window
+        the_popup.open()
+            #self.parent.current = "trial_screen"
+
+# Adaptive-Staircase (AS)
 class TestScreenAS(Screen):
 
     handedness = ObjectProperty(None)
@@ -656,6 +833,8 @@ class TestScreenAS(Screen):
         self.subj_trial_info = {}
         # Trial Average
         self.stimuli = list()
+
+        self.TrialScreen = TrialScreen()    # why is it here??
 
     # changes the color of the buttons as well as the screen
     def change_col_setting(self):
@@ -685,7 +864,8 @@ class TestScreenAS(Screen):
         ## Save the current degree
         degree_current = self.ids.cw.degree
 
-        self.stimuli.append(np.abs(degree_current - 50.0))
+        #self.stimuli.append(np.abs(degree_current - 50.0))
+        self.stimuli.append(90.0 + degree_current)
 
         '''
         Check if the respons('on the left' or 'on the right') is correct.
@@ -714,20 +894,21 @@ class TestScreenAS(Screen):
         # Add the current choice, check if reversal is happening
         self.track_rev(rel_pos)
         # Save trial data
-        self.save_trial_data(rel_pos) 
-
+        self.save_trial_data(rel_pos)
 
         # If you have reached the end...
         if self.trial_num == 19 or self.rev_count == 4:
             self.reset(self.block_num)
-        else: 
+        else:
             # next step deviation angle
             if rel_pos == 'left':
                 temp = self.ids.cw.degree - self.delta_d
 
                 # Set the left limit
-                if (self.ids.cw.quad_points[6] + self.ids.cw.height*math.tan(math.radians(temp)) < self.ids.cw.x):
-                    self.ids.cw.degree = math.degrees(math.atan((self.ids.cw.x - self.ids.cw.quad_points[6]) / self.ids.cw.height))
+                #if (self.ids.cw.quad_points[6] + self.ids.cw.height*math.tan(math.radians(temp)) < self.ids.cw.x):
+                #    self.ids.cw.degree = math.degrees(math.atan((self.ids.cw.x - self.ids.cw.quad_points[6]) / self.ids.cw.height))
+                if temp < -89.9:
+                    pass
                 else:
                     self.ids.cw.degree = temp
 
@@ -735,14 +916,15 @@ class TestScreenAS(Screen):
                 temp = self.ids.cw.degree + self.delta_d
 
                 # Set the right limit
-                if (self.ids.cw.quad_points[6] + self.ids.cw.height*math.tan(math.radians(temp)) > self.ids.cw.right):
-                    self.ids.cw.degree = math.degrees(math.atan((self.ids.cw.right - self.ids.cw.quad_points[6]) / self.ids.cw.height))
+                #if (self.ids.cw.quad_points[6] + self.ids.cw.height*math.tan(math.radians(temp)) > self.ids.cw.right):
+                #    self.ids.cw.degree = math.degrees(math.atan((self.ids.cw.right - self.ids.cw.quad_points[6]) / self.ids.cw.height))
+                if temp > 89.9:
+                    pass
                 else:
                     self.ids.cw.degree = temp
 
             self.trial_num += 1
             self.trial_total += 1
-
 
             ## change the colors of the screen
             self.change_col_setting()
@@ -758,12 +940,12 @@ class TestScreenAS(Screen):
             # A new block begins
             self.block_num += 1
             # New display configuration
-            self.ids.cw.degree = -1 * self.ids.cw.dir * 60
-            # There's no turning back
-            self.ids.layout.remove_widget(self.ids._backward)
+            self.ids.cw.degree = -1 * self.ids.cw.dir * 10
+            # There's no turning back > HJB does not want any 'stop' between the two sets
+            # self.ids.layout.remove_widget(self.ids._backward)
             # The buttons would be disabled until an experimenter presses the 'resume' button
-            self.ids._more_left.disabled = True
-            self.ids._more_right.disabled = True
+            # self.ids._more_left.disabled = True
+            # self.ids._more_right.disabled = True
             # Don't forget to update the total trial number
             self.trial_total += 1
 
@@ -774,35 +956,37 @@ class TestScreenAS(Screen):
             self.block_num -= 1
             self.trial_total = 0
             self.subj_trial_info = {}
-            # Bring back the "back" button
-            self.ids.layout.add_widget(self.ids._backward)
+            self.ids.cw.degree = self.ids.cw.dir * -70
+            # Reset to the original values
+            # self.degree = 60
+            # Bring back the "back" button > No longer need this option (11/20/22)
+            # self.ids.layout.add_widget(self.ids._backward)
             self.parent.current = "outcome_screen"
 
-class TestScreenPM(Screen):
+
+## This is a fool-proof Practice trials consisted of 6 trials.
+## When the user is incorrect in any of the SIX trials,
+## the reset button will be pressed.
+## The user must pass SIX consecutive trials to proceed to the actual
+## Psi-marginal trials
+class TrialScreen(Screen):
 
     handedness = ObjectProperty(None)
+    psi_nTrials = NumericProperty(None)
+    delta_d = NumericProperty()
+    degree_dir = NumericProperty()
 
     def __init__(self, **kwargs):
-        super(TestScreenPM, self).__init__(**kwargs)
+        super(TrialScreen, self).__init__(**kwargs)
         self.rgblist1 = [(1, 0, 0, 1), (1, 1, 0, 1), (0, 1, 0, 1)]
         self.rgblist2 = [(0, 0, 1, 1), (0.5, 0, 1, 1), (1, 0.56, 0.75, 1)]
         self.rgbindex = 0
         # check the trial number(within a session)
         self.trial_num = 0
-        # delta_d will alternate between psi_obj and psi_obj2
-        self.delta_d = psi_obj.xCurrent
-        self.psi_stims = list()
-        self.subj_trial_info = {}
-        # mark where psi_obj 1 will be used
-        list1 = [range(x, y) for x, y in zip([0, 12, 22, 32, 40], [7, 17, 27, 35, 43])]
-        psi_obj1_trials = [int(item) for sublist in list1 for item in sublist]
-        # the complete order = 0: psi_obj1 // 1:psi_obj2
-        self.psi_order = np.ones(46)
-        self.psi_order[psi_obj1_trials] = 0
-        self.psi_type = ['A', 'B']
+        self.delta_d = 20
 
     # changes the color of the buttons as well as the screen
-    def change_col_setting(self):
+    def change_col_setting(self, *largs):
         rgb_index = randrange(0, 3, 1)
         while rgb_index == self.rgbindex:
             rgb_index = randrange(0, 3, 1)
@@ -814,7 +998,168 @@ class TestScreenPM(Screen):
         self.ids._more_right.background_color = self.ids.cw.bg_color_before
         self.rgbindex = rgb_index
 
-    def save_trial_data(self, rel_pos): 
+    # check if the response is correct or not
+    def chk_if_corr(self, rel_pos):
+
+        x_coord_current = self.ids.cw.quad_points[4]
+        if x_coord_current > self.ids.cw.x_correct:
+            correct_ans = "left"
+        else:
+            correct_ans = "right"
+
+        # Compare if the response is correct
+        self.right_or_wrong = int(rel_pos == correct_ans)
+
+        self.change_col_setting()
+
+        if self.right_or_wrong == 1:
+            self.trial_num += 1
+            # change the direction
+            self.ids.cw.degree_dir = -1 * self.ids.cw.degree_dir
+            # For third and fourth trials, the degree should be 25
+            if self.trial_num == 2:
+                self.ids.cw.degree = 10.0
+            elif self.trial_num == 4:
+                self.ids.cw.degree = 15.0
+            if self.trial_num == 6:
+                '''
+                # If the staircase choice was 'Psi-Marginal', then proceed to the TestScreenPM
+                if self.parent.ids.paramscone.staircase in ['Psi-Marginal_7', 'Psi-Marginal_10', 'Psi-M(A)', 'Psi-M(B)']:
+                    the_popup = TrialPMc4Popup(title = "READ IT", size_hint = (None, None), size = (400, 400))
+                    # Catch trials at trial_num = {12, 23, 34}
+                    #if self.psi_nTrials == 25:
+                    if self.parent.ids.testsc_pm.fucked_up_cnt > 0:
+                        pass
+
+                    else:
+                        if self.parent.ids.paramscone.staircase == 'Psi-Marginal_10':
+                            list_a = [range(x, y) for x, y in zip([0, 21, 32,43],[10, 26, 37,48])]
+                            catch = [20,31,42]
+                        elif self.parent.ids.paramscone.staircase == 'Psi-Marginal_7':
+                            list_a = [range(x, y) for x, y in zip([0, 13, 23, 34, 45], [7, 18, 28, 39, 48])]
+                            catch = [12, 28, 44]
+
+                        elif self.parent.ids.paramscone.staircase == 'Psi-M(A)':        #A 25 times first
+                            list_a = [range(x, y) for x, y in zip([0, 11],[10,26])]
+                            catch = [10, 31, 42]
+                        else:                                                           #B 25 times first
+                            list_a = [range(x, y) for x, y in zip([26,37,43],[36,42,53])]
+                            catch = [10, 36, 42]
+
+                        psi_order = np.ones(int(self.psi_nTrials*2 + np.ceil(self.psi_nTrials/10)))
+                        psi_obj1_trials = [int(item) for sublist in list_a for item in sublist]
+                        psi_order[psi_obj1_trials] = 0
+                        psi_order[catch] = 2
+                        self.parent.ids.testsc_pm.psi_order = psi_order
+                        self.parent.ids.testsc_pm.catch = catch
+                        self.parent.ids.testsc_pm.psi_nTrials = self.psi_nTrials
+                        # Tell when the B trials (Mid to Index) start
+                        self.parent.ids.testsc_pm.fb_tr_n = int(np.where(psi_order==1)[0][0])
+
+                # If the staircase choice was 'Randomized', then proceed to the TestScreenRN
+                elif self.parent.ids.paramscone.staircase == 'Randomized':
+                    the_popup = GotoRNPopup(title = 'READ IT', size_hint = (None, None), size = (400, 400))
+
+                # If the staircase choice was 'Staircase', then proceed to the TestScreenAS
+                elif self.parent.ids.paramscone.staircase == 'Adaptive-Staircase':
+                    the_popup = GotoASPopup(title = 'READ IT', size_hint = (None, None), size = (400, 400))
+                '''
+
+                # Reset the trial number so that if revisted, it could start normally again.
+                self.trial_num = 0
+
+                the_popup = PracticePopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
+                the_popup.open()
+            else:
+                the_popup = ParamPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
+                the_popup.argh.text = "You're correct"
+                the_popup.open()
+        else:
+            the_popup = ParamPopup(title = "READ IT", size_hint = (None, None), size = (400, 400))
+            the_popup.argh.text = "You're incorrect \n Try again."
+            the_popup.open()
+            # If you are wrong, everything resets
+            self.trial_num = 0
+            self.ids.cw.degree = 20.0
+            self.ids.cw.degree_dir = -1 * self.ids.cw.degree_dir
+
+## Actual Psi-marginal testing screen
+class TestScreenPM(Screen):
+
+    handedness = ObjectProperty(None)
+    leftbutton = ObjectProperty()
+    rightbutton = ObjectProperty()
+    trialcount = ObjectProperty()
+    psi_order = ListProperty()
+    catch = ListProperty()
+    psi_nTrials = NumericProperty()
+    delta_d = NumericProperty()
+    degree_dir = NumericProperty()
+    fb_tr_n = NumericProperty()
+
+    def __init__(self, **kwargs):
+        super(TestScreenPM, self).__init__(**kwargs)
+        self.rgblist1 = [(1, 0, 0, 1), (1, 1, 0, 1), (0, 1, 0, 1)]
+        self.rgblist2 = [(0, 0, 1, 1), (0.5, 0, 1, 1), (1, 0.56, 0.75, 1)]
+        self.rgbindex = 0
+        # check the trial number(within a session)
+        self.trial_num = 0
+        #global psi_obj1
+        # delta_d will alternate between psi_obj and psi_obj2
+        #self.delta_d = psi_obj1.xCurrent
+        self.psi_stims = list()
+        self.subj_trial_info = {}
+
+        self.psi_type = ['A', 'B']
+        self.first_few = {}
+        # Just not calling defaultdict...
+        self.first_few['A'] = list()
+        self.first_few['B'] = list()
+        # index of fucking up...
+        self.fucked_up = False
+        # fucked_up counts
+        self.fucked_up_cnt = 0
+
+    # changes the color of the buttons as well as the screen
+    def change_col_setting(self, *largs):
+        rgb_index = randrange(0, 3, 1)
+        while rgb_index == self.rgbindex:
+            rgb_index = randrange(0, 3, 1)
+        self.ids.cw.bg_color_after = self.rgblist1[rgb_index]
+        self.ids.cw.bg_color_before = self.rgblist2[rgb_index]
+        self.ids._more_left.background_normal = ''
+        self.ids._more_left.background_color = self.ids.cw.bg_color_after
+        self.ids._more_right.background_normal = ''
+        self.ids._more_right.background_color = self.ids.cw.bg_color_before
+        self.rgbindex = rgb_index
+
+    ## n is either a integer or a list; msg is a string
+    ## I assume it should be fine to not wait until the psi restart is completed,
+    ## because you would proceed with another psi object that's running fine...
+    def clearance(self, n, msg):
+        if type(n) is list:
+            for i in range(n[0], n[1]):
+                del self.subj_trial_info["_".join(["TRIAL", str(i)])]
+            if self.fucked_up_cnt == 0:
+                global psi_orig, psi_obj2
+                psi_obj2 = copy.copy(psi_orig)
+                #psi_obj2 = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = self.psi_nTrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True) 
+                while psi_obj2.xCurrent is None:
+                    pass
+        else:
+            for i in range(n):
+                del self.subj_trial_info["_".join(["TRIAL", str(i)])]
+            if self.fucked_up_cnt == 0:
+                global psi_obj1
+                psi_obj1 = copy.copy(psi_orig)
+                #psi_obj1 = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = self.psi_nTrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True)
+            elif self.fucked_up_cnt == 0 and n == 11:
+                while psi_obj1.xCurrent is None:
+                    pass
+
+        self.subj_trial_info["NOTE"] = msg
+
+    def save_trial_data(self, rel_pos):
 
         self.psi_stims.append(self.ids.cw.degree)
 
@@ -827,63 +1172,365 @@ class TestScreenPM(Screen):
         # Compare if the response is correct
         self.right_or_wrong = int(rel_pos == correct_ans)
 
-        self.subj_trial_info["_".join(["TRIAL", str(self.trial_num)])] = {'trial_num': self.trial_num, 'Psi_obj': self.psi_type[int(self.psi_order[self.trial_num])], 'Psi_stimulus(deg)': self.ids.cw.degree, 'Visual_stimulus(deg)': self.ids.cw.false_ref + self.ids.cw.degree_dir * self.ids.cw.degree, 'correct_ans': correct_ans, 'response': rel_pos, 'response_correct': self.right_or_wrong} 
+        # saving the response for the current psi direction: 'A' or 'B'
+        # Don't do this for the catch trials
+        if int(self.psi_order[self.trial_num]) in [0,1]:
+            self.first_few[self.psi_type[int(self.psi_order[self.trial_num])]].append(self.right_or_wrong) 
+
+
+        if self.fucked_up_cnt == 1:
+            ## If you have failed in the first 'A' block and fail again in the first 'B' block,
+            ## erase all trial info and just stop it...
+            ## You better quit if you have reached here... there's just no point continuing the task 
+            if self.trial_num == 2 and any([x == 0 for x in self.first_few['B'][0:3]]):
+                self.clearance(2, "The participant failed both in the first A and B sets so terminated")
+                # YOU ARE FUCKED FOREVER
+                self.fucked_up_cnt += 1
+            ## If you have failed in the first 'A' block, passed the new 'B' block, 
+            ## and again failed on the following 'A' block, you are done.
+            elif self.trial_num == 5 and any([x == 0 for x in self.first_few['A'][0:3]]):
+                self.clearance(5, "The participant kept failed on 'A' direction so terminated") 
+                self.fucked_up_cnt += 1
+            ## If you passed the first 'A' block, failed on 'B', passed another 'A' block, and then
+            ## fail on B again, you are done.
+            elif (self.trial_num in [15, 17])  and any([x == 0 for x in self.first_few['B'][0:3]]):
+                self.clearance(self.trial_num, "The participant kept failed on 'B' direction so terminated")
+                self.fucked_up_cnt += 1
+
+            else:
+                ## If you see no issue, go save your trial info!
+                if self.psi_order[self.trial_num] == 2:
+                    self.subj_trial_info["_".join(["TRIAL", str(self.trial_num)])] = {'trial_num': self.trial_num, 'Visual_stimulus(deg)': self.ids.cw.false_ref + self.ids.cw.degree_dir*self.ids.cw.degree, 'correct_ans': correct_ans, 'response': rel_pos, 'response_correct': self.right_or_wrong}
+                else:
+                    self.subj_trial_info["_".join(["TRIAL", str(self.trial_num)])] = {'trial_num': self.trial_num, 'Psi_obj': self.psi_type[int(self.psi_order[self.trial_num])], 'Psi_stimulus(deg)': self.ids.cw.degree, 'Visual_stimulus(deg)': self.ids.cw.false_ref + self.ids.cw.degree_dir * self.ids.cw.degree, 'correct_ans': correct_ans, 'response': rel_pos, 'response_correct': self.right_or_wrong}
+
+        elif self.fucked_up_cnt == 0:
+            ## It is likely that if the user fails one of the first three trials, the user may never converge to the finger position.
+            ## Therefore, if a user fails in any of the first 3 'A' trials,
+            ## erase all those 3 trials and begin anew with 'B' trials
+            if self.trial_num == 2 and any([x == 0 for x in self.first_few['A'][0:3]]):
+                the_popup = AreYouSurePopup(title = "READ IT", size_hint = (None, None), size = (Window.width, 2*Window.height/3.0), pos_hint = {'x':0, 'y':0.4})
+                the_popup.open()
+                threading.Thread(target = self.clearance, args = (2, "The participant missed one of the first three A trials")).start()
+                # Start again from B
+                self.trial_num = 0
+                self.fucked_up_cnt += 1
+                if self.parent.ids.paramscone.staircase == 'Psi-Marginal_7':
+                    list_a = [range(x, y) for x, y in zip([5, 18, 29, 39, 50], [12, 23, 34, 44, 53])]
+                elif self.parent.ids.paramscone.staircase == 'Psi-Marginal_10':
+                    list_a = [range(x, y) for x, y in zip([10, 26, 37, 48], [20, 31, 42, 53])]
+                psi_obj1_trials = [int(item) for sublist in list_a for item in sublist]
+                # Psi-order should be renewed
+                psi_order = np.ones(int(self.psi_nTrials*2 + np.ceil(self.psi_nTrials/10)))
+                psi_order[psi_obj1_trials] = 0
+                psi_order[self.catch] = 2
+                self.psi_order = psi_order
+                ## Fucked up status turns on
+                self.fucked_up = True
+                # Previous record removed
+                self.first_few['A'] = []
+
+            ## If you have passed the first 'A' trials, but make 3 consecutive fails in the first 3
+            ## 'B' trials, then erase all those 5 'B' trials and continue with the 'A' trials
+            elif self.trial_num == (self.fb_tr_n+2) and any([x == 0 for x in self.first_few['B'][0:3]]):
+                the_popup = AreYouSurePopup(title = "READ IT", size_hint = (None, None), size = (Window.width, 2*Window.height/3.0), pos_hint = {'x':0, 'y':0.4})
+                the_popup.open()
+                threading.Thread(target = self.clearance, args = ([self.fb_tr_n,self.fb_tr_n+2], "The participant missed one of the first three B trials")).start()
+                # Return to the point where the participant was still okay.
+                self.trial_num = self.fb_tr_n
+                self.fucked_up_cnt += 1
+                if self.parent.ids.paramscone.staircase == 'Psi-Marginal_7':
+                    list_a = [range(x, y) for x, y in zip([7, 18, 29, 45], [12, 23, 34, 48])]
+                    psi_obj1_trials = [int(item) for sublist in list_a for item in sublist]
+                    psi_order = np.concatenate((self.psi_order[0:7], np.ones(len(self.psi_order) - 7)))
+                elif self.parent.ids.paramscone.staircase == 'Psi-Marginal_10':
+                    list_a = [range(x, y) for x, y in zip([10,26,43],[15,31,48])]
+                    psi_obj1_trials = [int(item) for sublist in list_a for item in sublist]
+                    psi_order = np.concatenate((self.psi_order[0:10], np.ones(len(self.psi_order) - 10)))
+                psi_order[psi_obj1_trials] = 0
+                psi_order[self.catch] = 2
+                self.psi_order = psi_order
+                self.fucked_up = True
+                self.first_few['B'] = []
+
+            ## If you see no issue, go save your trial info!
+            if self.psi_order[self.trial_num] == 2:
+                self.subj_trial_info["_".join(["TRIAL", str(self.trial_num)])] = {'trial_num': self.trial_num, 'Visual_stimulus(deg)': self.ids.cw.false_ref + self.ids.cw.degree_dir*self.ids.cw.degree, 'correct_ans': correct_ans, 'response': rel_pos, 'response_correct': self.right_or_wrong}
+            else:
+                self.subj_trial_info["_".join(["TRIAL", str(self.trial_num)])] = {'trial_num': self.trial_num, 'Psi_obj': self.psi_type[int(self.psi_order[self.trial_num])], 'Psi_stimulus(deg)': self.ids.cw.degree, 'Visual_stimulus(deg)': self.ids.cw.false_ref + self.ids.cw.degree_dir * self.ids.cw.degree, 'correct_ans': correct_ans, 'response': rel_pos, 'response_correct': self.right_or_wrong} 
+
+
+    def reactivate_leftbutton(self, *largs):
+        self.leftbutton.disabled = False
+        self.rightbutton.disabled = False
+        self.trialcount.text = str(self.trial_num + 1)
+
+    def screen_blackout(self, *largs):
+        self.ids.cw.bg_color_before = (0, 0, 0, 1)
+        self.ids.cw.bg_color_after = (0, 0, 0, 1)
+        self.trialcount.text = ""
 
     def where_is_your_finger(self, rel_pos):
 
+        # buttons are disabled for a short amount of time
+        self.leftbutton.disabled = True
+        self.rightbutton.disabled = True
+
+        # Screen blacks out and the count is momentarily wiped out too.
+        self.screen_blackout()
+
         self.save_trial_data(rel_pos)
 
+        print('status?', self.trial_num)
+
         # If You are on the final trial, reset everything
-        if self.trial_num == 45: 
+        # Short version: self.psi_nTrials*2 + 3(catch trials)
+        # Long version: self.psi_nTrials*2 + 5(catchtrials) 
+        if self.trial_num == len(self.psi_order)-1 or self.fucked_up_cnt == 2:
             self.reset()
-        else: 
-            if self.psi_order[self.trial_num] == 0:
-                psi_obj.addData(self.right_or_wrong)
-                while psi_obj.xCurrent is None: # Wait until calculation is complete
-                    pass
+        elif self.fucked_up:
+            if len(self.first_few['A']) == 0:
+                self.delta_d = float(psi_obj2.xCurrent)
+                self.ids.cw.false_ref = 45
+                self.ids.cw.degree_dir = 1
+                self.ids.cw.degree = float(self.delta_d)
+            elif len(self.first_few['B']) == 0:
+                self.delta_d = float(psi_obj1.xCurrent)
+                self.ids.cw.false_ref = 55
+                self.ids.cw.degree_dir = -1
+                self.ids.cw.degree = float(self.delta_d)
+            # Fucked up status checked
+            self.fucked_up = not(self.fucked_up)
+            # The buttons will be reactivated after 1.2s
+            Clock.schedule_once(self.reactivate_leftbutton, 2)
+        else:
+            if self.psi_order[self.trial_num] == 2:
                 if self.psi_order[self.trial_num + 1] == 1:
-                    self.delta_d = psi_obj2.xCurrent
+                    self.delta_d = float(psi_obj2.xCurrent)
+                    self.ids.cw.false_ref = 45
+                    self.ids.cw.degree_dir = 1
+                elif self.psi_order[self.trial_num + 1] == 0:
+                    self.delta_d = float(psi_obj1.xCurrent)
+                    self.ids.cw.false_ref = 55
+                    self.ids.cw.degree_dir = -1
+
+            elif self.psi_order[self.trial_num] == 0:
+                psi_obj1.addData(self.right_or_wrong)
+                while psi_obj1.xCurrent is None: # Wait until calculation is complete
+                    pass
+                if self.psi_order[self.trial_num + 1] == 2:
+                    #self.delta_d = float(35)
+                    self.delta_d = float(45) # Let's make use of the catch trials (11/22/22)
+                elif self.psi_order[self.trial_num + 1] == 1:
+                    self.delta_d = float(psi_obj2.xCurrent)
                     self.ids.cw.false_ref = 45
                     self.ids.cw.degree_dir = 1
                 else:
-                    self.delta_d = psi_obj.xCurrent
+                    self.delta_d = float(psi_obj1.xCurrent)
             else:
                 psi_obj2.addData(self.right_or_wrong)
                 while psi_obj2.xCurrent is None:
                     pass
-                if self.psi_order[self.trial_num + 1] == 0:
-                    self.delta_d = psi_obj.xCurrent
+                if self.psi_order[self.trial_num + 1] == 2:
+                    #self.delta_d = float(35)
+                    self.delta_d = float(45) # same change (11/22/22)
+                elif self.psi_order[self.trial_num + 1] == 0:
+                    self.delta_d = float(psi_obj1.xCurrent)
                     self.ids.cw.false_ref = 55
                     self.ids.cw.degree_dir = -1
                 else:
-                    self.delta_d = psi_obj2.xCurrent
+                    self.delta_d = float(psi_obj2.xCurrent)
 
             self.ids.cw.degree = float(self.delta_d)
-
             self.trial_num += 1
 
-            ## change the colors of the screen
-            self.change_col_setting()
+            # The buttons will be reactivated after 1.2s
+            Clock.schedule_once(self.reactivate_leftbutton, 2)
+
+        print("nTrials: ", self.psi_nTrials, "first B trials:", self.first_few['B'], 'psi_order', self.psi_order)
+
+        ## change the colors of the screen
+        Clock.schedule_once(self.change_col_setting, 2)
+
 
     def reset(self):
         # Dump everything to the store
-        store.put(subid, subj_info = subj_info, subj_anth = subj_anth, subj_trial_info = self.subj_trial_info) 
+        store.put(subid, subj_info = subj_info, subj_anth = subj_anth, subj_trial_info = self.subj_trial_info)
 
         self.parent.ids.outsc.avg_performance = str(np.mean(np.array(self.psi_stims[-11:])) - 5.0)
 
         # Trial number renewed
         self.trial_num = 0
 
-        # Psi marginal objects restart
-        global psi_obj, psi_obj2
-        psi_obj = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = ntrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = slopePrior, guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True)
-        psi_obj2 = copy.copy(psi_obj)
+        self.leftbutton.disabled = False
+        self.rightbutton.disabled = False
 
-        # Stimulus is newly assigned from psi_obj 1(= 15 degrees)
-        self.ids.cw.degree = float(psi_obj.xCurrent)
+        self.first_few = {}
+        # Just not calling defaultdict...
+        self.first_few['A'] = list()
+        self.first_few['B'] = list()
+
+        self.fucked_up_cnt = 0
 
         # False reference moving to 55
         self.ids.cw.false_ref = 55
+        # ... and the psi output will again be "subtracted"
+        self.ids.cw.degree_dir = -1
+
+        self.subj_trial_info = {}
+
+        # Go to the outcome screen
+        self.parent.current = "outcome_screen"
+
+class TestScreenRN(Screen):
+
+    handedness = ObjectProperty(None)
+    leftbutton = ObjectProperty()
+    rightbutton = ObjectProperty()
+    trialcount = ObjectProperty()
+    psi_order = ListProperty()
+    psi_nTrials = NumericProperty()
+    delta_d = NumericProperty()
+
+
+    def __init__(self, **kwargs):
+        super(TestScreenRN, self).__init__(**kwargs)
+        self.rgblist1 = [(1, 0, 0, 1), (1, 1, 0, 1), (0, 1, 0, 1)]
+        self.rgblist2 = [(0, 0, 1, 1), (0.5, 0, 1, 1), (1, 0.56, 0.75, 1)]
+        self.rgbindex = 0
+        # check the trial number(within a session)
+        self.trial_num = 0
+        # delta_d will alternate between psi_obj and psi_obj2
+        self.delta_d = 15.0
+        self.psi_stims = list()
+        self.subj_trial_info = {}
+
+        self.psi_type = ['A', 'B']
+        stimvals = [15.0, 13.0, 11.0, 9.5, 8.0, 6.5, 5.5, 4.5, 3.5, 3.0, 2.5, 2.0, 1.5, 1.0, .5]
+        posneg = stimvals + [-x for x in stimvals]
+        posnegdict = {x:(0 if x != 15.0 else 1) for x in posneg}            # First trial's angle = 15.0
+        self.stim_vals = np.array(stimvals)
+        self.stim_count = posnegdict
+
+    # changes the color of the buttons as well as the screen
+    def change_col_setting(self, *largs):
+        rgb_index = randrange(0, 3, 1)
+        while rgb_index == self.rgbindex:
+            rgb_index = randrange(0, 3, 1)
+        self.ids.cw.bg_color_after = self.rgblist1[rgb_index]
+        self.ids.cw.bg_color_before = self.rgblist2[rgb_index]
+        self.ids._more_left.background_normal = ''
+        self.ids._more_left.background_color = self.ids.cw.bg_color_after
+        self.ids._more_right.background_normal = ''
+        self.ids._more_right.background_color = self.ids.cw.bg_color_before
+        self.rgbindex = rgb_index
+
+    def save_trial_data(self, rel_pos):
+
+        self.psi_stims.append(self.ids.cw.degree)
+        print(self.stim_count)
+
+        # Count how many times each stimulus was presented.
+        key = self.ids.cw.degree * self.ids.cw.degree_dir
+        if key in self.stim_count.keys():
+            self.stim_count[key] += 1
+        else:
+            self.stim_count[key] = 1
+
+        x_coord_current = self.ids.cw.quad_points[4]
+        if x_coord_current > self.ids.cw.x_correct:
+            correct_ans = "left"
+        else:
+            correct_ans = "right"
+
+        # Compare if the response is correct
+        self.right_or_wrong = int(rel_pos == correct_ans)
+
+        psi_order = [0,0,0,0,0,1,1,1,1,1]
+        self.psi_order = np.array(psi_order*9)
+
+        self.subj_trial_info["_".join(["TRIAL", str(self.trial_num)])] = {'trial_num': self.trial_num, 'Psi_obj': self.psi_type[int(self.psi_order[self.trial_num])], 'Psi_stimulus(deg)': self.ids.cw.degree, 'Visual_stimulus(deg)': self.ids.cw.false_ref + self.ids.cw.degree_dir*self.ids.cw.degree, 'correct_ans': correct_ans, 'response': rel_pos, 'response_correct': self.right_or_wrong}
+
+    def reactivate_leftbutton(self, *largs):
+        self.leftbutton.disabled = False
+        self.rightbutton.disabled = False
+        self.trialcount.text = str(self.trial_num + 1)
+
+    def screen_blackout(self, *largs):
+        self.ids.cw.bg_color_before = (0, 0, 0, 1)
+        self.ids.cw.bg_color_after = (0, 0, 0, 1)
+        self.trialcount.text = ""
+
+    def is_temp_in(self, temp, shift = False, dirshift = None):
+        if shift:
+            if dirshift == 'thumb_to_middle':
+                self.ids.cw.degree_dir = 1
+            elif dirshift == 'middle_to_thumb':
+                self.ids.cw.degree_dir = -1
+
+        temp_counted = self.ids.cw.degree_dir * temp
+
+        if temp_counted in self.stim_count.keys():
+            while (self.stim_count[temp_counted] == 3):
+                temp = self.stim_vals[np.random.randint(len(self.stim_vals))]
+                temp_counted = self.ids.cw.degree_dir * temp
+
+        self.delta_d = float(temp)
+
+    def where_is_your_finger(self, rel_pos):
+
+        # buttons are disabled for a short amount of time
+        self.leftbutton.disabled = True
+        self.rightbutton.disabled = True
+
+        # Screen blacks out and the count is momentarily wiped out too.
+        self.screen_blackout()
+
+        self.save_trial_data(rel_pos)
+
+        print('status?', self.trial_num)
+
+        # If You are on the final trial, reset everything
+        # The trial number should be 89 (in total 90 trials)
+        if self.trial_num == len(self.psi_order)-1:
+            self.reset()
+        else:
+            temp = self.stim_vals[np.random.randint(len(self.stim_vals))]
+            if self.psi_order[self.trial_num] == 0:
+                if self.psi_order[self.trial_num + 1] == 1:
+                    self.is_temp_in(temp, shift = True, dirshift = 'thumb_to_middle')
+                else:
+                    self.is_temp_in(temp, shift = False)
+            else:
+                if self.psi_order[self.trial_num + 1] == 0:
+                    self.is_temp_in(temp, shift = True, dirshift = 'middle_to_thumb')
+                else:
+                    self.is_temp_in(temp, shift = False)
+
+            self.ids.cw.degree = float(self.delta_d)
+            self.trial_num += 1
+
+            # The buttons will be reactivated after 1.2s
+            Clock.schedule_once(self.reactivate_leftbutton, 2)
+
+        ## change the colors of the screen
+        Clock.schedule_once(self.change_col_setting, 2)
+
+
+    def reset(self):
+        # Dump everything to the store
+        store.put(subid, subj_info = subj_info, subj_anth = subj_anth, subj_trial_info = self.subj_trial_info)
+
+        self.parent.ids.outsc.avg_performance = str(np.mean(np.array(self.psi_stims[-11:])) - 5.0)
+
+        # Trial number renewed
+        self.trial_num = 0
+
+        self.leftbutton.disabled = False
+        self.rightbutton.disabled = False
+
+        # False reference moving to 55 - is it needed?
+        #self.ids.cw.false_ref = 55
         # ... and the psi output will again be "subtracted"
         self.ids.cw.degree_dir = -1
 
@@ -897,21 +1544,30 @@ class OutcomeScreen(Screen):
     avg_performance = StringProperty('')
 
     def start_a_new_subject(self):
+
+        # Prepare the trial count for the test screen(Psi-marginal)
+        self.parent.ids.testsc_pm.trialcount.text ="1"
         # Reset the inputs of the first parameter input screen
         self.parent.ids.paramscone.pid_text_input.text = ''
-        self.parent.ids.paramscone.age_text_input.text = ''
-        self.parent.ids.paramscone.male_chkbox.active = False
-        self.parent.ids.paramscone.female_chkbox.active = False
         self.parent.ids.paramscone.left_chkbox.active = False
         self.parent.ids.paramscone.right_chkbox.active = False
-        self.parent.ids.paramscone.psi_chkbox.active = False
-        self.parent.ids.paramscone.adapst_chkbox.active = False
+        #self.parent.ids.paramscone.psi_chkbox.active = False
+        self.parent.ids.paramscone.dd_btn.text = 'Press here'
+        #self.parent.ids.paramscone.psi_longer_chkbox.active = False 
+        #self.parent.ids.paramscone.rn_chkbox.active = False
+        #self.parent.ids.paramscone.adapst_chkbox.active = False
         # Reset the inputs of the second parameter input screen
-        self.parent.ids.paramsc.flen_text_input.text = ''
-        self.parent.ids.paramsc.fwid_text_input.text = ''
-        self.parent.ids.paramsc.initd_text_input.text = ''
-        self.parent.ids.paramsc.mprad_text_input.text = ''
+        # It seems like some users are repeatedly tested
+        if not self.parent.ids.paramscone.repeat_chkbox.active:
+            self.parent.ids.paramsc.flen_text_input.text = ''
+            self.parent.ids.paramsc.fwid_text_input.text = ''
+            self.parent.ids.paramsc.initd_text_input.text = ''
+            self.parent.ids.paramsc.mprad_text_input.text = ''
+            self.parent.ids.paramscone.age_text_input.text = ''
+            self.parent.ids.paramscone.male_chkbox.active = False
+            self.parent.ids.paramscone.female_chkbox.active = False
         self.parent.current = "param_screen_one"
+
 
 class screen_manager(ScreenManager):
     pass
@@ -922,4 +1578,6 @@ class ProprioceptiveApp(App):
         return screen_manager(transition=FadeTransition())
 
 if __name__ == '__main__':
+    Window.fullscreen = True
+    Window.maximize()
     ProprioceptiveApp().run()
