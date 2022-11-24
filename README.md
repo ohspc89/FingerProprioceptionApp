@@ -1,4 +1,4 @@
-# HandProprioceptionApp
+# FingerProprioceptionApp
 
 This is a mobile application that tests your finger position sesne.
 
