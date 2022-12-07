@@ -516,15 +516,20 @@ StimLevels = delta angle
 ## testing purpose
 ## These parameter values would give the initial value of 30
 ntrials = 25
-mu = np.concatenate((np.arange(0.0, 15.2, 0.2), np.arange(15.25, 67.25, 0.25)))
+#mu = np.concatenate((np.arange(0.0, 15.2, 0.2), np.arange(15.25, 67.25, 0.25)))
+# Could this reduce the computational load?
+mu = np.concatenate((np.arange(0.0, 10.2, 0.2), np.arange(11, 87, 1)))
 mu = np.delete(mu, 25)
+print(mu)
 sigma = np.linspace(0.05, 1, 21)
 lapse = np.arange(0, 0.1, 0.01)
 guessRate = 0.5
 
 # Why am I removing 25? There must be a reason. Don't edit it.
-stimLevels = np.concatenate((np.arange(0.0, 15.2, 0.2), np.arange(15.25, 67.25, 0.25)))
+#stimLevels = np.concatenate((np.arange(0.0, 15.2, 0.2), np.arange(15.25, 67.25, 0.25)))
+stimLevels = np.concatenate((np.arange(0.0, 10.2, 0.2), np.arange(11, 87, 1)))
 stimLevels = np.delete(stimLevels, 25)
+#stimLevels = np.linspace(1, 4.2, 200)
 
 # The first psi_obj.xCurrent = 20.0
 
@@ -537,9 +542,7 @@ except:
     psi_orig = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = ntrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True)
 '''
 global psi_orig, psi_obj1, psi_obj2
-psi_orig = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = ntrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma,\
-               slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse,\
-               lapsePrior = ('uniform', None), marginalize = True, thread = True)
+psi_orig = Psi(stimLevels, Pfunction = 'Gumbel', nTrials = ntrials, threshold = mu, thresholdPrior = ('uniform', None), slope = sigma, slopePrior = ('uniform', None), guessRate = guessRate, guessPrior = ('uniform', None), lapseRate = lapse, lapsePrior = ('uniform', None), marginalize = True, thread = True)
 
 psi_obj1 = copy.copy(psi_orig)
 psi_obj2 = copy.copy(psi_orig)
@@ -627,6 +630,8 @@ class ParamInputScreenOne(Screen):
         elif self.staircase == 'Adaptive-Staircase':
             # Make sure that you could enter the initial step size when you pick Adaptive Staircase
             self.parent.ids.paramsc.initd_text_input.disabled = False
+        else:
+            self.parent.ids.paramsc.initd_text_input.disabled = True
         psi_popup.argh.text = "%r selected" % self.staircase
         psi_popup.open()
 
@@ -831,8 +836,7 @@ class TestScreenAS(Screen):
         self.trial_total = 0
         # JSON dictionary preparation
         self.subj_trial_info = {}
-        # Trial Average
-        self.stimuli = list()
+        self.stimuli = list()       # angles where reversal happened
 
         self.TrialScreen = TrialScreen()    # why is it here??
 
@@ -855,6 +859,7 @@ class TestScreenAS(Screen):
             if self.prev_choice[-1] is not response:
                 self.rev_count += 1
         self.prev_choice.append(response)
+        self.stimuli.append(90.0 + self.ids.cw.degree)
 
     def update_delta_d(self):
         self.delta_d = float(self.parent.ids.paramsc.initd_text_input.text) / (2.0 ** self.rev_count)
@@ -865,7 +870,7 @@ class TestScreenAS(Screen):
         degree_current = self.ids.cw.degree
 
         #self.stimuli.append(np.abs(degree_current - 50.0))
-        self.stimuli.append(90.0 + degree_current)
+        #self.stimuli.append(90.0 + degree_current)
 
         '''
         Check if the respons('on the left' or 'on the right') is correct.
@@ -952,7 +957,8 @@ class TestScreenAS(Screen):
         else:
             # Dump everything to the store and move to the outcome screen
             store.put(subid, subj_info = subj_info, subj_anth = subj_anth, subj_trial_info = self.subj_trial_info)
-            self.parent.ids.outsc.avg_performance = str(np.mean(np.array(self.stimuli)))
+            self.parent.ids.outsc.avg_performance = 'M: ' + str(np.mean(np.array(self.stimuli), dtype=np.float16))
+            self.parent.ids.outsc.sd_performance = 's: ' + str(np.std(np.array(self.stimuli), dtype=np.float16))
             self.block_num -= 1
             self.trial_total = 0
             self.subj_trial_info = {}
@@ -1108,6 +1114,7 @@ class TestScreenPM(Screen):
         # delta_d will alternate between psi_obj and psi_obj2
         #self.delta_d = psi_obj1.xCurrent
         self.psi_stims = list()
+        self.vis_stims = list()
         self.subj_trial_info = {}
 
         self.psi_type = ['A', 'B']
@@ -1162,6 +1169,7 @@ class TestScreenPM(Screen):
     def save_trial_data(self, rel_pos):
 
         self.psi_stims.append(self.ids.cw.degree)
+        self.vis_stims.append(self.ids.cw.false_ref + self.ids.cw.degree_dir * self.ids.cw.degree)
 
         x_coord_current = self.ids.cw.quad_points[4]
         if x_coord_current > self.ids.cw.x_correct:
@@ -1281,7 +1289,7 @@ class TestScreenPM(Screen):
 
         self.save_trial_data(rel_pos)
 
-        print('status?', self.trial_num)
+        #print('status?', self.trial_num)
 
         # If You are on the final trial, reset everything
         # Short version: self.psi_nTrials*2 + 3(catch trials)
@@ -1320,7 +1328,7 @@ class TestScreenPM(Screen):
                     pass
                 if self.psi_order[self.trial_num + 1] == 2:
                     #self.delta_d = float(35)
-                    self.delta_d = float(45) # Let's make use of the catch trials (11/22/22)
+                    self.delta_d = float(5) # Let's make use of the catch trials (11/22/22)
                 elif self.psi_order[self.trial_num + 1] == 1:
                     self.delta_d = float(psi_obj2.xCurrent)
                     self.ids.cw.false_ref = 45
@@ -1333,7 +1341,7 @@ class TestScreenPM(Screen):
                     pass
                 if self.psi_order[self.trial_num + 1] == 2:
                     #self.delta_d = float(35)
-                    self.delta_d = float(45) # same change (11/22/22)
+                    self.delta_d = float(5) # same change (11/22/22)
                 elif self.psi_order[self.trial_num + 1] == 0:
                     self.delta_d = float(psi_obj1.xCurrent)
                     self.ids.cw.false_ref = 55
@@ -1347,7 +1355,7 @@ class TestScreenPM(Screen):
             # The buttons will be reactivated after 1.2s
             Clock.schedule_once(self.reactivate_leftbutton, 2)
 
-        print("nTrials: ", self.psi_nTrials, "first B trials:", self.first_few['B'], 'psi_order', self.psi_order)
+        #print("nTrials: ", self.psi_nTrials, "first B trials:", self.first_few['B'], 'psi_order', self.psi_order)
 
         ## change the colors of the screen
         Clock.schedule_once(self.change_col_setting, 2)
@@ -1357,7 +1365,8 @@ class TestScreenPM(Screen):
         # Dump everything to the store
         store.put(subid, subj_info = subj_info, subj_anth = subj_anth, subj_trial_info = self.subj_trial_info)
 
-        self.parent.ids.outsc.avg_performance = str(np.mean(np.array(self.psi_stims[-11:])) - 5.0)
+        self.parent.ids.outsc.avg_performance = 'M: ' + str(np.mean(np.array(self.vis_stims[-11:]), dtype=np.float16) - 5.0)
+        self.parent.ids.outsc.sd_performance = 's: ' + str(np.std(np.array(self.vis_stims[-11:]), dtype=np.float16) - 5.0)
 
         # Trial number renewed
         self.trial_num = 0
@@ -1521,7 +1530,8 @@ class TestScreenRN(Screen):
         # Dump everything to the store
         store.put(subid, subj_info = subj_info, subj_anth = subj_anth, subj_trial_info = self.subj_trial_info)
 
-        self.parent.ids.outsc.avg_performance = str(np.mean(np.array(self.psi_stims[-11:])) - 5.0)
+        self.parent.ids.outsc.avg_performance = 'M: ' + str(np.mean(np.array(self.psi_stims[-11:]), dtype=np.float16) - 5.0)
+        self.parent.ids.outsc.sd_performance = 's: ' + str(np.std(np.array(self.psi_stims[-11:]), dtype=np.float16) - 5.0)
 
         # Trial number renewed
         self.trial_num = 0
@@ -1542,6 +1552,7 @@ class TestScreenRN(Screen):
 class OutcomeScreen(Screen):
 
     avg_performance = StringProperty('')
+    sd_performance = StringProperty('')
 
     def start_a_new_subject(self):
 
@@ -1578,6 +1589,6 @@ class ProprioceptiveApp(App):
         return screen_manager(transition=FadeTransition())
 
 if __name__ == '__main__':
-    Window.fullscreen = True
-    Window.maximize()
+    #Window.fullscreen = True
+    #Window.maximize()
     ProprioceptiveApp().run()

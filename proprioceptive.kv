@@ -389,6 +389,7 @@
                     #value: root.male
                     pos_hint: {'center_x':.4}
                     size_hint_x: 0.1
+                    size_hint_y: 0.1
                     on_active: root.if_active_m(self.active)
 
                 PLabel:
@@ -852,7 +853,12 @@
 		PLabel:
 			color: 0, 0, 0, 1
 			text: root.avg_performance
-			pos_hint:{'center_x':0.5, 'center_y':0.6}
+			pos_hint:{'center_x':0.44, 'center_y':0.6}
+
+        PLabel:
+            color: 0, 0, 0, 1
+            text: root.sd_performance
+            pos_hint:{'center_x':0.56, 'center_y':0.6}
 
 		Button:
 			color: 0.8, 0.8, 0.8, 1
