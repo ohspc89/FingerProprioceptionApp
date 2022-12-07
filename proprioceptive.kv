@@ -367,6 +367,7 @@
 
                 PTextInput:
                     id: pid
+                    size_hint_y: 0.3
 					on_text_validate: age.focus = True
 
             RelativeLayout:
@@ -376,6 +377,7 @@
 
                 PTextInput:
                     id: age
+                    size_hint_y: 0.3 
 
             RelativeLayout:
 
@@ -389,7 +391,6 @@
                     #value: root.male
                     pos_hint: {'center_x':.4}
                     size_hint_x: 0.1
-                    size_hint_y: 0.1
                     on_active: root.if_active_m(self.active)
 
                 PLabel:

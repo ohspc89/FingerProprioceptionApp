@@ -518,8 +518,8 @@ StimLevels = delta angle
 ntrials = 25
 #mu = np.concatenate((np.arange(0.0, 15.2, 0.2), np.arange(15.25, 67.25, 0.25)))
 # Could this reduce the computational load?
-mu = np.concatenate((np.arange(0.0, 10.2, 0.2), np.arange(11, 87, 1)))
-mu = np.delete(mu, 25)
+mu = np.concatenate((np.arange(0.0, 15.2, 0.2), np.arange(15.4, 68, 0.4)))
+#mu = np.delete(mu, 25)
 print(mu)
 sigma = np.linspace(0.05, 1, 21)
 lapse = np.arange(0, 0.1, 0.01)
@@ -527,8 +527,8 @@ guessRate = 0.5
 
 # Why am I removing 25? There must be a reason. Don't edit it.
 #stimLevels = np.concatenate((np.arange(0.0, 15.2, 0.2), np.arange(15.25, 67.25, 0.25)))
-stimLevels = np.concatenate((np.arange(0.0, 10.2, 0.2), np.arange(11, 87, 1)))
-stimLevels = np.delete(stimLevels, 25)
+stimLevels = np.concatenate((np.arange(0.0, 15.2, 0.2), np.arange(15.4, 68, 0.4)))
+#stimLevels = np.delete(stimLevels, 25)
 #stimLevels = np.linspace(1, 4.2, 200)
 
 # The first psi_obj.xCurrent = 20.0
@@ -1328,7 +1328,7 @@ class TestScreenPM(Screen):
                     pass
                 if self.psi_order[self.trial_num + 1] == 2:
                     #self.delta_d = float(35)
-                    self.delta_d = float(5) # Let's make use of the catch trials (11/22/22)
+                    self.delta_d = float(10) # Let's make use of the catch trials (11/22/22)
                 elif self.psi_order[self.trial_num + 1] == 1:
                     self.delta_d = float(psi_obj2.xCurrent)
                     self.ids.cw.false_ref = 45
@@ -1341,7 +1341,7 @@ class TestScreenPM(Screen):
                     pass
                 if self.psi_order[self.trial_num + 1] == 2:
                     #self.delta_d = float(35)
-                    self.delta_d = float(5) # same change (11/22/22)
+                    self.delta_d = float(10) # same change (11/22/22)
                 elif self.psi_order[self.trial_num + 1] == 0:
                     self.delta_d = float(psi_obj1.xCurrent)
                     self.ids.cw.false_ref = 55
@@ -1365,8 +1365,8 @@ class TestScreenPM(Screen):
         # Dump everything to the store
         store.put(subid, subj_info = subj_info, subj_anth = subj_anth, subj_trial_info = self.subj_trial_info)
 
-        self.parent.ids.outsc.avg_performance = 'M: ' + str(np.mean(np.array(self.vis_stims[-11:]), dtype=np.float16) - 5.0)
-        self.parent.ids.outsc.sd_performance = 's: ' + str(np.std(np.array(self.vis_stims[-11:]), dtype=np.float16) - 5.0)
+        self.parent.ids.outsc.avg_performance = 'M: ' + str(np.mean(np.array(self.vis_stims[-11:]), dtype=np.float16))
+        self.parent.ids.outsc.sd_performance = 's: ' + str(np.std(np.array(self.vis_stims[-11:]), dtype=np.float16))
 
         # Trial number renewed
         self.trial_num = 0
