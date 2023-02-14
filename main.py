@@ -859,7 +859,7 @@ class TestScreenAS(Screen):
             if self.prev_choice[-1] is not response:
                 self.rev_count += 1
         self.prev_choice.append(response)
-        self.stimuli.append(90.0 + self.ids.cw.degree)
+        self.stimuli.append(90.0 + self.ids.cw.degree*self.ids.cw.dir)
 
     def update_delta_d(self):
         self.delta_d = float(self.parent.ids.paramsc.initd_text_input.text) / (2.0 ** self.rev_count)
@@ -892,7 +892,7 @@ class TestScreenAS(Screen):
         # Based on the updated reversal count, calculate the delta_d
         self.update_delta_d()
 
-        self.subj_trial_info["_".join(["TRIAL", str(self.trial_total)])] = {'trial_num': self.trial_num, 'block_num': self.block_num, 'rev_cnt': self.rev_count, 'Next_Step_size(deg)': self.delta_d, 'Visual Stimulus(deg)': 90.0 + degree_current, 'correct_ans': correct_ans, 'response': self.prev_choice[-1], 'response_correct': self.right_or_wrong}
+        self.subj_trial_info["_".join(["TRIAL", str(self.trial_total)])] = {'trial_num': self.trial_num, 'block_num': self.block_num, 'rev_cnt': self.rev_count, 'Next_Step_size(deg)': self.delta_d, 'Visual Stimulus(deg)': 90.0 + self.ids.cw.dir*degree_current, 'correct_ans': correct_ans, 'response': self.prev_choice[-1], 'response_correct': self.right_or_wrong}
 
     def where_is_your_finger(self, rel_pos):
 
@@ -963,6 +963,7 @@ class TestScreenAS(Screen):
             self.trial_total = 0
             self.subj_trial_info = {}
             self.ids.cw.degree = self.ids.cw.dir * -70
+            self.stimuli = list() # clear up?
             # Reset to the original values
             # self.degree = 60
             # Bring back the "back" button > No longer need this option (11/20/22)
