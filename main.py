@@ -660,7 +660,8 @@ class ParamInputScreenOne(Screen):
                     else:
                         self.parent.ids.testsc_pm.handedness.degree_dir = -1
                         self.parent.ids.trialsc.handedness.degree_dir = -1
-                    subid = "_".join(["SUBJ", self.pid_text_input.text])
+                    subj_time = time.strftime("%H:%M:%S")
+                    subid = "_".join(["SUBJ", self.pid_text_input.text, subj_time])
                     subj_info = {'age' : self.age_text_input.text, 'gender' : self.gender, 'right_used' : self.ids.rightchk.active, 'Staircase used': self.staircase}
                     self.parent.current = "param_screen_two"
 
@@ -670,7 +671,8 @@ class ParamInputScreenOne(Screen):
                 the_popup.argh.text = "Missing Values"
                 the_popup.open()
             else:
-                subid = "_".join(["SUBJ", self.pid_text_input.text])
+                subj_time = time.strftime("%H:%M:%S")
+                subid = "_".join(["SUBJ", self.pid_text_input.text, subj_time])
                 subj_info = {'age' : self.age_text_input.text, 'gender' : self.gender, 'right_used' : self.ids.rightchk.active, 'Staircase used': self.staircase}
                 self.parent.current = "param_screen_two"
 
@@ -858,8 +860,10 @@ class TestScreenAS(Screen):
         if len(self.prev_choice) > 0:
             if self.prev_choice[-1] is not response:
                 self.rev_count += 1
+                # reversal angles
+                self.stimuli.append(90.0 + self.ids.cw.degree*self.ids.cw.dir)
         self.prev_choice.append(response)
-        self.stimuli.append(90.0 + self.ids.cw.degree*self.ids.cw.dir)
+        print(self.stimuli)
 
     def update_delta_d(self):
         self.delta_d = float(self.parent.ids.paramsc.initd_text_input.text) / (2.0 ** self.rev_count)
@@ -1560,7 +1564,6 @@ class OutcomeScreen(Screen):
         # Prepare the trial count for the test screen(Psi-marginal)
         self.parent.ids.testsc_pm.trialcount.text ="1"
         # Reset the inputs of the first parameter input screen
-        self.parent.ids.paramscone.pid_text_input.text = ''
         self.parent.ids.paramscone.left_chkbox.active = False
         self.parent.ids.paramscone.right_chkbox.active = False
         #self.parent.ids.paramscone.psi_chkbox.active = False
@@ -1571,6 +1574,7 @@ class OutcomeScreen(Screen):
         # Reset the inputs of the second parameter input screen
         # It seems like some users are repeatedly tested
         if not self.parent.ids.paramscone.repeat_chkbox.active:
+            self.parent.ids.paramscone.pid_text_input.text = ''
             self.parent.ids.paramsc.flen_text_input.text = ''
             self.parent.ids.paramsc.fwid_text_input.text = ''
             self.parent.ids.paramsc.initd_text_input.text = ''
